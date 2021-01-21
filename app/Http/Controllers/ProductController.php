@@ -22,7 +22,8 @@ class ProductController extends Controller
      */
     public function index()
     {
-        $products = Product::all('name', 'price', 'image', 'color');
+        $products = Product::where('delete_flg', '<>', 1)->get();
+        // $products = Product::where('delete_flg', '<>', 1)->get();
         $counted = $products->countBy('color');
         $counted->all();
         $query = Product::distinct()->get('color');
@@ -93,12 +94,12 @@ class ProductController extends Controller
             $model->delete_flg = "1";
             $model->save();
             DB::commit();
-            return redirect()->route('admin');
+            return redirect()->route('users.admin');
         } catch (Exception $e) {
             DB::rollback();
             Log::error($e->getMessage());
 
-            return redirect()->route('admin')
+            return redirect()->route('users.admin')
                 ->withErrors([trans('messages.system-error')])
                 ->withInput();
         }

@@ -20,7 +20,7 @@ class UserController extends Controller
             'password' => 'required|min:8|max:100',
         ]);
         if ($validator->fails()) {
-            return redirect()->route('login')
+            return redirect()->route('users.login')
                 ->withErrors($validator)
                 ->withInput();
         }
@@ -30,10 +30,10 @@ class UserController extends Controller
 
                 Auth::guard('users')->login($user);
 
-                return redirect()->route('category');
+                return redirect()->route('users.category');
             } else {
                 // users.login
-                return redirect()->route('login')
+                return redirect()->route('users.login')
                     ->withErrors([trans('messages.login-fail')])
                     ->withInput();
             }
@@ -41,7 +41,7 @@ class UserController extends Controller
             DB::rollback();
             Log::error($e->getMessage());
 
-            return redirect()->route('login')
+            return redirect()->route('users.login')
                 ->withErrors([trans('messages.system-error')])
                 ->withInput();
         }
@@ -70,7 +70,7 @@ class UserController extends Controller
             'password_confirmation' => 'required|min:8'
         ]);
         if ($validator->fails()) {
-            return redirect()->route('register')
+            return redirect()->route('users.register')
                 ->withErrors($validator)
                 ->withInput();
         }
@@ -85,7 +85,7 @@ class UserController extends Controller
             foreach ($user_name as $item) {
                 if ($item = $request->get('user_name')) {
                     $validator = "user da ton tai";
-                    return redirect()->route('register')->withErrors($validator)
+                    return redirect()->route('users.register')->withErrors($validator)
                         ->withInput();;
                 }
             }
@@ -105,7 +105,7 @@ class UserController extends Controller
             DB::rollback();
             Log::error($e->getMessage());
 
-            return redirect()->route('register')
+            return redirect()->route('users.register')
                 ->withErrors([trans('messages.system-error')])
                 ->withInput();
         }

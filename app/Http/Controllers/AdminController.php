@@ -7,6 +7,7 @@ use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Validator;
 
 class AdminController extends Controller
 {
@@ -34,13 +35,28 @@ class AdminController extends Controller
      */
     public function store(Request $request)
     {
+        $validator = Validator::make($request->all(), [
+            'name' => 'required|max:150',
+            'description' => 'required|max:150',
+            'image' => 'required|image|mimes:jpg,png,jpeg|max:2048|',
+            'color' => 'required|integer',
+            'brand' => 'required|integer',
+            'supplier' => 'required|integer',
+            'category' => 'required|integer',
+            'amount' => 'required|max:12'
+        ]);
+        if ($validator->fails()) {
+            return redirect()->route('users.admin')
+                ->withErrors($validator)
+                ->withInput();
+        }
         try {
             $register = new Product();
             if ($request->get('id')) {
                 $register = Product::find($request->get('id'));
             }
             $register->name = $request->get('name');
-            $register->image = " ";
+            $register->image = $request->get('image');
             $register->icon = " ";
             $register->description = $request->get('description');
             $register->amount = $request->get('amount');
@@ -52,11 +68,12 @@ class AdminController extends Controller
             $register->categorie_id = $request->get('category');
 
             $register->save();
-            return redirect()->route('admin')->withInput();
+            $request->session()->flash('success', trans('messages.create-success'));
+            return redirect()->route('users.admin')->withInput();
         } catch (Exception $e) {
             DB::rollback();
             Log::error($e->getMessage());
-            return redirect()->route('admin')
+            return redirect()->route('users.admin')
                 ->withErrors([trans('messages.system-error')])
                 ->withInput();
         }

@@ -321,6 +321,8 @@
     <div class="container-xl">
         <div class="table-responsive">
             <div class="table-wrapper">
+                <x-success />
+                <x-error />
                 <div class="table-title">
                     <div class="row">
                         <div class="col-sm-6">
@@ -357,7 +359,6 @@
                     </thead>
                     <tbody>
                         @foreach ($products as $key => $item)
-
                             <tr>
                                 <td>
                                     <span class="custom-checkbox">
@@ -368,8 +369,8 @@
 
                                 <th>{{ $key }}</th>
                                 <th>{{ $item->name }}</th>
-                                <th><img class="card-img" style="width: 70px; height: 70px;" src="{{ $item['image'] }}"
-                                        alt=""></th>
+                                <th><img class="card-img" style="width: 70px; height: 70px;"
+                                        src="{{ URL::asset($item['image']) }}" alt=""></th>
                                 <th>{{ $item['description'] }}</th>
                                 <th>{{ $item['amount'] }}</th>
                                 <th>{{ $item['price'] }}</th>
@@ -377,100 +378,17 @@
                                 <th>{{ $item['brands'] }}</th>
 
                                 <td>
-                                    <a href="#editEmployeeModal" class="edit" data-toggle="modal"><i
-                                            class="material-icons" data-toggle="tooltip" title="Edit">&#xE254;</i></a>
-                                    <a href="{{ route('product-delete', ['id' => $item->id]) }}" class="delete"><i
+                                    <a href="#editEmployeeModal" class="edit" data-id="{{ $item['id'] }}"
+                                        data-toggle="modal"><i class="material-icons" data-toggle="tooltip"
+                                            title="Edit">&#xE254;</i></a>
+                                    <a href="{{ route('users.product-delete', ['id' => $item->id]) }}" class="delete"><i
                                             class="material-icons" data-toggle="tooltip" title="Delete">&#xE872;</i></a>
                                 </td>
                             </tr>
                         @endforeach
-
-                        {{-- <tr>
-                            <td>
-                                <span class="custom-checkbox">
-                                    <input type="checkbox" id="checkbox2" name="options[]" value="1">
-                                    <label for="checkbox2"></label>
-                                </span>
-                            </td>
-                            <td>Dominique Perrier</td>
-                            <td>dominiqueperrier@mail.com</td>
-                            <td>Obere Str. 57, Berlin, Germany</td>
-                            <td>(313) 555-5735</td>
-                            <td>
-                                <a href="#editEmployeeModal" class="edit" data-toggle="modal"><i class="material-icons"
-                                        data-toggle="tooltip" title="Edit">&#xE254;</i></a>
-                                <a href="#deleteEmployeeModal" class="delete" data-toggle="modal"><i
-                                        class="material-icons" data-toggle="tooltip" title="Delete">&#xE872;</i></a>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>
-                                <span class="custom-checkbox">
-                                    <input type="checkbox" id="checkbox3" name="options[]" value="1">
-                                    <label for="checkbox3"></label>
-                                </span>
-                            </td>
-                            <td>Maria Anders</td>
-                            <td>mariaanders@mail.com</td>
-                            <td>25, rue Lauriston, Paris, France</td>
-                            <td>(503) 555-9931</td>
-                            <td>
-                                <a href="#editEmployeeModal" class="edit" data-toggle="modal"><i class="material-icons"
-                                        data-toggle="tooltip" title="Edit">&#xE254;</i></a>
-                                <a href="#deleteEmployeeModal" class="delete" data-toggle="modal"><i
-                                        class="material-icons" data-toggle="tooltip" title="Delete">&#xE872;</i></a>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>
-                                <span class="custom-checkbox">
-                                    <input type="checkbox" id="checkbox4" name="options[]" value="1">
-                                    <label for="checkbox4"></label>
-                                </span>
-                            </td>
-                            <td>Fran Wilson</td>
-                            <td>franwilson@mail.com</td>
-                            <td>C/ Araquil, 67, Madrid, Spain</td>
-                            <td>(204) 619-5731</td>
-                            <td>
-                                <a href="#editEmployeeModal" class="edit" data-toggle="modal"><i class="material-icons"
-                                        data-toggle="tooltip" title="Edit">&#xE254;</i></a>
-                                <a href="#deleteEmployeeModal" class="delete" data-toggle="modal"><i
-                                        class="material-icons" data-toggle="tooltip" title="Delete">&#xE872;</i></a>
-                            </td>
-                        </tr> --}}
-                        {{-- <tr>
-                            <td>
-                                <span class="custom-checkbox">
-                                    <input type="checkbox" id="checkbox5" name="options[]" value="1">
-                                    <label for="checkbox5"></label>
-                                </span>
-                            </td>
-                            <td>Martin Blank</td>
-                            <td>martinblank@mail.com</td>
-                            <td>Via Monte Bianco 34, Turin, Italy</td>
-                            <td>(480) 631-2097</td>
-                            <td>
-                                <a href="#editEmployeeModal" class="edit" data-toggle="modal"><i class="material-icons"
-                                        data-toggle="tooltip" title="Edit">&#xE254;</i></a>
-                                <a href="#deleteEmployeeModal" class="delete" data-toggle="modal"><i
-                                        class="material-icons" data-toggle="tooltip" title="Delete">&#xE872;</i></a>
-                            </td>
-                        </tr> --}}
                     </tbody>
                 </table>
-                {{-- <div class="clearfix">
-                    <div class="hint-text">Showing <b>5</b> out of <b>25</b> entries</div>
-                    <ul class="pagination">
-                        <li class="page-item disabled"><a href="#">Previous</a></li>
-                        <li class="page-item"><a href="#" class="page-link">1</a></li>
-                        <li class="page-item"><a href="#" class="page-link">2</a></li>
-                        <li class="page-item active"><a href="#" class="page-link">3</a></li>
-                        <li class="page-item"><a href="#" class="page-link">4</a></li>
-                        <li class="page-item"><a href="#" class="page-link">5</a></li>
-                        <li class="page-item"><a href="#" class="page-link">Next</a></li>
-                    </ul>
-                </div> --}}
+
             </div>
         </div>
     </div>
@@ -478,7 +396,7 @@
     <div id="addEmployeeModal" class="modal fade">
         <div class="modal-dialog">
             <div class="modal-content">
-                <form method="post" action="{{ route('add-new-product') }}">
+                <form method="post" action="{{ route('users.add-new-product') }}">
                     @csrf
                     <div class="modal-header">
                         <h4 class="modal-title">Add Employee</h4>
@@ -491,7 +409,7 @@
                         </div>
                         <div class="form-group">
                             <label>Image</label>
-                            <input type="text" class="form-control" name="imange" required>
+                            <input type="file" name="image" id="image" />
                         </div>
                         <div class="form-group">
                             <label>Description</label>
@@ -534,7 +452,8 @@
     <div id="editEmployeeModal" class="modal fade">
         <div class="modal-dialog">
             <div class="modal-content">
-                <form>
+                <form method="post" action="#">
+                    @csrf
                     <div class="modal-header">
                         <h4 class="modal-title">Edit Employee</h4>
                         <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
@@ -542,19 +461,39 @@
                     <div class="modal-body">
                         <div class="form-group">
                             <label>Name</label>
-                            <input type="text" class="form-control" required>
+                            <input type="text" class="form-control" value={{ $products }} name="name" required>
                         </div>
                         <div class="form-group">
-                            <label>Email</label>
-                            <input type="email" class="form-control" required>
+                            <label>Image</label>
+                            <input type="text" class="form-control" name="imange" required>
                         </div>
                         <div class="form-group">
-                            <label>Address</label>
-                            <textarea class="form-control" required></textarea>
+                            <label>Description</label>
+                            <input type="text" class="form-control" name="description" required>
                         </div>
                         <div class="form-group">
-                            <label>Phone</label>
-                            <input type="text" class="form-control" required>
+                            <label>Amount</label>
+                            <input type="text" class="form-control" name="amount" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Price</label>
+                            <input type="text" class="form-control" name="price" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Color</label>
+                            <input type="text" class="form-control" name="color" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Brands</label>
+                            <input type="text" class="form-control" name="brand" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Supplier</label>
+                            <input type="text" class="form-control" name="supplier" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Category</label>
+                            <input type="text" class="form-control" name="category" required>
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -587,5 +526,42 @@
         </div>
     </div>
 </body>
+<script>
+    // $(document).on("click", ".edit", function() {
+    //     var ids = $(this).attr('data-id');
+    //     $(".modal-body #editEmployeeModal").val(ids);
+    //     console.log(ids);
+    //     jQuery.ajax({
+    //         type: 'POST',
+    //         url: '',
+    //         success: function(data) {
+
+    //         },
+    //         error: function(e) {
+    //             console.log(e);
+    //         }
+    //     });
+    // });
+    function loadImage(input, id) {
+
+        if (!input.files[0].name.match(/.(.jpg|.jpeg|.png)$/i)) {
+            alert('Please choose image with extension: .jpg,.jpeg,.png');
+            input.value = ''
+            return;
+        }
+
+        id = id || '#image-preview';
+        if (input.files && input.files[0]) {
+            var reader = new FileReader();
+            reader.onload = function(e) {
+                jQuery(id).attr('src', e.target.result)
+                    .width(40)
+                    .height(40);
+            };
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+
+</script>
 
 </html>
