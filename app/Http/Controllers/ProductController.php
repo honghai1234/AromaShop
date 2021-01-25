@@ -27,12 +27,7 @@ class ProductController extends Controller
         $counted = $products->countBy('color');
         $counted->all();
         $query = Product::distinct()->get('color');
-        $arrayColor = [
-            "",
-            "red",
-            "yellow",
-            "blue"
-        ];
+
         $categorys = Category::all('name');
         // $array = ['0'=>'Red'];
         // return $data;s
@@ -40,7 +35,6 @@ class ProductController extends Controller
             'products' => $products,
             'categorys' => $categorys,
             'querys' => $query,
-            'arrayColor' => $arrayColor,
             'counted' => $counted
         ]);
     }

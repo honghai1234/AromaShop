@@ -69,7 +69,7 @@
                                     @foreach ($querys as $item)
                                         <li class="filter-list"><input class="pixel-radio" type="radio" id="black"
                                                 name="color"><label
-                                                for="black">{{ $arrayColor[$item['color']] }}<span>({{ $counted[$item['color']] }})</span></label>
+                                                for="black">{{ arrayColor($item->color) }}<span>({{ $counted[$item['color']] }})</span></label>
                                         </li>
                                     @endforeach
                                 </ul>

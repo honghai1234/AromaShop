@@ -3,6 +3,7 @@
 
 <head>
     <meta charset="utf-8">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <title>Bootstrap CRUD Data Table for Database with Modal Form</title>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto|Varela+Round">
@@ -367,18 +368,18 @@
                                     </span>
                                 </td>
 
-                                <th>{{ $key }}</th>
+                                <th>{{ $key += 1 }}</th>
                                 <th>{{ $item->name }}</th>
                                 <th><img class="card-img" style="width: 70px; height: 70px;"
                                         src="{{ URL::asset($item['image']) }}" alt=""></th>
                                 <th>{{ $item['description'] }}</th>
                                 <th>{{ $item['amount'] }}</th>
-                                <th>{{ $item['price'] }}</th>
-                                <th>{{ $item['color'] }}</th>
-                                <th>{{ $item['brands'] }}</th>
+                                <th>{{ FormatMoney($item['price']) }} VND</th>
+                                <th>{{ arrayColor($item['color']) }}</th>
+                                <th>{{ $item->supplier['name'] }}</th>
 
                                 <td>
-                                    <a href="#editEmployeeModal" class="edit" data-id="{{ $item['id'] }}"
+                                    <a href="#" id="edit" class="edit" onclick="updateProduct({{ $item->id }})"
                                         data-toggle="modal"><i class="material-icons" data-toggle="tooltip"
                                             title="Edit">&#xE254;</i></a>
                                     <a href="{{ route('users.product-delete', ['id' => $item->id]) }}" class="delete"><i
@@ -392,11 +393,11 @@
             </div>
         </div>
     </div>
-    <!-- Edit Modal HTML -->
+    <!-- add Modal HTML -->
     <div id="addEmployeeModal" class="modal fade">
         <div class="modal-dialog">
             <div class="modal-content">
-                <form method="post" action="{{ route('users.add-new-product') }}">
+                <form method="post" action="{{ route('users.add-new-product') }}" enctype="multipart/form-data">
                     @csrf
                     <div class="modal-header">
                         <h4 class="modal-title">Add Employee</h4>
@@ -409,11 +410,12 @@
                         </div>
                         <div class="form-group">
                             <label>Image</label>
-                            <input type="file" name="image" id="image" />
+                            <input type="file" name="image" id="image" accept=".jpg, .jpeg, .png" />
                         </div>
                         <div class="form-group">
                             <label>Description</label>
-                            <input type="text" class="form-control" name="description" required>
+                            <textarea class="form-control" name="description" id="exampleFormControlTextarea1" rows="3"
+                                required></textarea>
                         </div>
                         <div class="form-group">
                             <label>Amount</label>
@@ -425,19 +427,28 @@
                         </div>
                         <div class="form-group">
                             <label>Color</label>
-                            <input type="text" class="form-control" name="color" required>
-                        </div>
-                        <div class="form-group">
-                            <label>Brands</label>
-                            <input type="text" class="form-control" name="brand" required>
+
+                            <select name="color" class="form-control">
+                                <option value="1">Red</option>
+                                <option value="2">blue</option>
+                                <option value="3">Yellow</option>
+                            </select>
                         </div>
                         <div class="form-group">
                             <label>Supplier</label>
-                            <input type="text" class="form-control" name="supplier" required>
+                            <select name="supplier" class="form-control">
+                                @foreach ($suppliers as $item)
+                                    <option value={{ $item['id'] }}>{{ $item->name }}</option>
+                                @endforeach
+                            </select>
                         </div>
                         <div class="form-group">
                             <label>Category</label>
-                            <input type="text" class="form-control" name="category" required>
+                            <select name="category" class="form-control">
+                                @foreach ($categories as $item)
+                                    <option value={{ $item['id'] }}>{{ $item->name }}</option>
+                                @endforeach
+                            </select>
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -449,10 +460,11 @@
         </div>
     </div>
     <!-- Edit Modal HTML -->
+
     <div id="editEmployeeModal" class="modal fade">
         <div class="modal-dialog">
             <div class="modal-content">
-                <form method="post" action="#">
+                <form id="modalForm">
                     @csrf
                     <div class="modal-header">
                         <h4 class="modal-title">Edit Employee</h4>
@@ -461,39 +473,50 @@
                     <div class="modal-body">
                         <div class="form-group">
                             <label>Name</label>
-                            <input type="text" class="form-control" value={{ $products }} name="name" required>
+                            <input type="hidden" name="idproductedit" id="idproductedit" />
+                            <input type="text" class="form-control" id="name" name="name" required>
                         </div>
                         <div class="form-group">
                             <label>Image</label>
-                            <input type="text" class="form-control" name="imange" required>
+                            <input type="file" name="image" id="imageedit" accept=".jpg, .jpeg, .png" />
                         </div>
                         <div class="form-group">
                             <label>Description</label>
-                            <input type="text" class="form-control" name="description" required>
+                            <textarea class="form-control" name="description" id="description" rows="3"
+                                required></textarea>
                         </div>
                         <div class="form-group">
                             <label>Amount</label>
-                            <input type="text" class="form-control" name="amount" required>
+                            <input type="text" class="form-control" id="amount" name="amount" required>
                         </div>
                         <div class="form-group">
                             <label>Price</label>
-                            <input type="text" class="form-control" name="price" required>
+                            <input type="text" class="form-control" id="price" name="price" required>
                         </div>
                         <div class="form-group">
                             <label>Color</label>
-                            <input type="text" class="form-control" name="color" required>
-                        </div>
-                        <div class="form-group">
-                            <label>Brands</label>
-                            <input type="text" class="form-control" name="brand" required>
+
+                            <select name="color" id="color" class="form-control">
+                                <option value="1">Red</option>
+                                <option value="2">blue</option>
+                                <option value="3">Yellow</option>
+                            </select>
                         </div>
                         <div class="form-group">
                             <label>Supplier</label>
-                            <input type="text" class="form-control" name="supplier" required>
+                            <select name="supplier" id="supplier" class="form-control">
+                                @foreach ($suppliers as $item)
+                                    <option value={{ $item['id'] }}>{{ $item->name }}</option>
+                                @endforeach
+                            </select>
                         </div>
                         <div class="form-group">
                             <label>Category</label>
-                            <input type="text" class="form-control" name="category" required>
+                            <select name="category" id="category" class="form-control">
+                                @foreach ($categories as $item)
+                                    <option value={{ $item['id'] }}>{{ $item->name }}</option>
+                                @endforeach
+                            </select>
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -527,40 +550,89 @@
     </div>
 </body>
 <script>
-    // $(document).on("click", ".edit", function() {
-    //     var ids = $(this).attr('data-id');
-    //     $(".modal-body #editEmployeeModal").val(ids);
-    //     console.log(ids);
-    //     jQuery.ajax({
-    //         type: 'POST',
-    //         url: '',
-    //         success: function(data) {
+    // jQuery.ajaxSetup({
+    //             headers: {
+    //                 'X-CSRF-TOKEN': jQuery('meta[name="csrf-token"]').attr('content')
+    //             }
+    //         });
 
-    //         },
-    //         error: function(e) {
-    //             console.log(e);
-    //         }
-    //     });
-    // });
-    function loadImage(input, id) {
-
-        if (!input.files[0].name.match(/.(.jpg|.jpeg|.png)$/i)) {
-            alert('Please choose image with extension: .jpg,.jpeg,.png');
-            input.value = ''
-            return;
-        }
-
-        id = id || '#image-preview';
-        if (input.files && input.files[0]) {
-            var reader = new FileReader();
-            reader.onload = function(e) {
-                jQuery(id).attr('src', e.target.result)
-                    .width(40)
-                    .height(40);
-            };
-            reader.readAsDataURL(input.files[0]);
-        }
+    function updateProduct(id) {
+        $.get('getProduct/' + id, function(products) {
+            $("#idproductedit").val(products.id);
+            $("#name").val(products.name);
+            // $('"#image"').val(products.image);   
+            $("#description").val(products.description);
+            $("#amount").val(products.amount);
+            $("#price").val(products.price);
+            $("#color").val(products.color);
+            $('#editEmployeeModal').modal('show')
+        });
+        // $('#modalFormedit').modal(options);
     }
+
+    $('#modalForm').submit(function(e) {
+        e.preventDefault();
+        var formData = new FormData(this);
+
+        var id = $('#idproductedit').val();
+        var name = $('#name').val();
+        // var image = $('input[id=imageedit]')[0].files[0].name;
+        // var image = $formData;
+        var description = $('#description').val();
+        var amount = $('#amount').val();
+        var price = $('#price').val();
+        var color = $('#color').val();
+        var supplier = $('#supplier').val();
+        var category = $('#category').val();
+        formData.append("name", id);
+        formData.append("name", name);
+        formData.append("image", $('input[id=imageedit]')[0].files[0]);
+        formData.append("icon", "");
+        formData.append("description", description);
+        formData.append("amount", amount);
+        formData.append("price", price);
+        formData.append("color", color);
+        formData.append("category", category);
+
+        $.ajax({
+            url: "{{ route('users.edit-product') }}",
+            type: "POST",
+            headers: {
+                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+            },
+            enctype: 'multipart/form-data',
+            processData: false, // tell jQuery not to process the data
+            contentType: false, // tell jQuery not to set contentType
+            data: formData,
+            success: function(response) {
+                location.reload();
+            },
+            error: function error(response) {
+                console.log(response);
+            }
+        });
+        return false;
+    })
+
+    // function loadImage(input, id) {
+
+    //     if (!input.files[0].name.match(/.(.jpg|.jpeg|.png)$/i)) {
+    //         alert('Please choose image with extension: .jpg,.jpeg,.png');
+    //         input.value = ''
+    //         return;
+    //     }
+
+    //     id = id || '#image-preview';
+    //     if (input.files && input.files[0]) {
+    //         var reader = new FileReader();
+    //         reader.onload = function(e) {
+    //             jQuery(id).attr('src', e.target.result)
+    //                 .width(40)
+    //                 .height(40);
+    //         };
+    //         reader.readAsDataURL(input.files[0]);
+    //     }
+    // }
 
 </script>
 
