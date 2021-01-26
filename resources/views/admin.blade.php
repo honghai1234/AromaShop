@@ -3,6 +3,7 @@
 
 <head>
     <meta charset="utf-8">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <title>Bootstrap CRUD Data Table for Database with Modal Form</title>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto|Varela+Round">
@@ -12,6 +13,7 @@
     <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/js/bootstrap.min.js"></script>
+
     <style>
         body {
             color: #566787;
@@ -321,6 +323,8 @@
     <div class="container-xl">
         <div class="table-responsive">
             <div class="table-wrapper">
+                <x-success />
+                <x-error />
                 <div class="table-title">
                     <div class="row">
                         <div class="col-sm-6">
@@ -334,6 +338,43 @@
                         </div>
                     </div>
                 </div>
+                <form id="search-form" method="post" action="{{ route('users.search-admin') }}"
+                    enctype="multipart/form-data">
+                    @csrf
+                    <div class="inner-form">
+                        <div class="basic-search">
+                            <div class="input-field">
+                                <input id="search" name="search" type="text" placeholder="Search..." />
+                                <div class="input-select">
+                                    <select id="color" data-trigger="" name="color">
+                                        <option value="0">all</option>
+                                        <option value="1">Red</option>
+                                        <option value="2">blue</option>
+                                        <option value="3">Yellow</option>
+                                    </select>
+                                </div>
+                                <div class="input-select">
+                                    <select id="color" data-trigger="" name="category">
+                                        <option value="0">all</option>
+                                        @foreach ($categories as $item)
+                                            <option value="{{ $item->id }}">{{ $item->name }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="advance-search">
+                            <div class="row third">
+                                <div class="input-field">
+                                    <button class="btn-search" type="submit" class="btn btn-block btn-primary"
+                                        id="search-product">Search</button>
+
+
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
                 <table class="table table-striped table-hover">
                     <thead>
                         <tr>
@@ -357,7 +398,6 @@
                     </thead>
                     <tbody>
                         @foreach ($products as $key => $item)
-
                             <tr>
                                 <td>
                                     <span class="custom-checkbox">
@@ -366,119 +406,36 @@
                                     </span>
                                 </td>
 
-                                <th>{{ $key }}</th>
+                                <th>{{ $key += 1 }}</th>
                                 <th>{{ $item->name }}</th>
-                                <th><img class="card-img" style="width: 70px; height: 70px;" src="{{ $item['image'] }}"
-                                        alt=""></th>
+                                <th><img class="card-img" style="width: 70px; height: 70px;"
+                                        src="{{ URL::asset($item['image']) }}" alt=""></th>
                                 <th>{{ $item['description'] }}</th>
                                 <th>{{ $item['amount'] }}</th>
-                                <th>{{ $item['price'] }}</th>
-                                <th>{{ $item['color'] }}</th>
-                                <th>{{ $item['brands'] }}</th>
+                                <th>{{ FormatMoney($item['price']) }} VND</th>
+                                <th>{{ arrayColor($item['color']) }}</th>
+                                <th>{{ $item->supplier['name'] }}</th>
 
                                 <td>
-                                    <a href="#editEmployeeModal" class="edit" data-toggle="modal"><i
-                                            class="material-icons" data-toggle="tooltip" title="Edit">&#xE254;</i></a>
-                                    <a href="{{ route('product-delete', ['id' => $item->id]) }}" class="delete"><i
+                                    <a href="#" id="edit" class="edit" onclick="updateProduct({{ $item->id }})"
+                                        data-toggle="modal"><i class="material-icons" data-toggle="tooltip"
+                                            title="Edit">&#xE254;</i></a>
+                                    <a href="{{ route('users.product-delete', ['id' => $item->id]) }}" class="delete"><i
                                             class="material-icons" data-toggle="tooltip" title="Delete">&#xE872;</i></a>
                                 </td>
                             </tr>
                         @endforeach
-
-                        {{-- <tr>
-                            <td>
-                                <span class="custom-checkbox">
-                                    <input type="checkbox" id="checkbox2" name="options[]" value="1">
-                                    <label for="checkbox2"></label>
-                                </span>
-                            </td>
-                            <td>Dominique Perrier</td>
-                            <td>dominiqueperrier@mail.com</td>
-                            <td>Obere Str. 57, Berlin, Germany</td>
-                            <td>(313) 555-5735</td>
-                            <td>
-                                <a href="#editEmployeeModal" class="edit" data-toggle="modal"><i class="material-icons"
-                                        data-toggle="tooltip" title="Edit">&#xE254;</i></a>
-                                <a href="#deleteEmployeeModal" class="delete" data-toggle="modal"><i
-                                        class="material-icons" data-toggle="tooltip" title="Delete">&#xE872;</i></a>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>
-                                <span class="custom-checkbox">
-                                    <input type="checkbox" id="checkbox3" name="options[]" value="1">
-                                    <label for="checkbox3"></label>
-                                </span>
-                            </td>
-                            <td>Maria Anders</td>
-                            <td>mariaanders@mail.com</td>
-                            <td>25, rue Lauriston, Paris, France</td>
-                            <td>(503) 555-9931</td>
-                            <td>
-                                <a href="#editEmployeeModal" class="edit" data-toggle="modal"><i class="material-icons"
-                                        data-toggle="tooltip" title="Edit">&#xE254;</i></a>
-                                <a href="#deleteEmployeeModal" class="delete" data-toggle="modal"><i
-                                        class="material-icons" data-toggle="tooltip" title="Delete">&#xE872;</i></a>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>
-                                <span class="custom-checkbox">
-                                    <input type="checkbox" id="checkbox4" name="options[]" value="1">
-                                    <label for="checkbox4"></label>
-                                </span>
-                            </td>
-                            <td>Fran Wilson</td>
-                            <td>franwilson@mail.com</td>
-                            <td>C/ Araquil, 67, Madrid, Spain</td>
-                            <td>(204) 619-5731</td>
-                            <td>
-                                <a href="#editEmployeeModal" class="edit" data-toggle="modal"><i class="material-icons"
-                                        data-toggle="tooltip" title="Edit">&#xE254;</i></a>
-                                <a href="#deleteEmployeeModal" class="delete" data-toggle="modal"><i
-                                        class="material-icons" data-toggle="tooltip" title="Delete">&#xE872;</i></a>
-                            </td>
-                        </tr> --}}
-                        {{-- <tr>
-                            <td>
-                                <span class="custom-checkbox">
-                                    <input type="checkbox" id="checkbox5" name="options[]" value="1">
-                                    <label for="checkbox5"></label>
-                                </span>
-                            </td>
-                            <td>Martin Blank</td>
-                            <td>martinblank@mail.com</td>
-                            <td>Via Monte Bianco 34, Turin, Italy</td>
-                            <td>(480) 631-2097</td>
-                            <td>
-                                <a href="#editEmployeeModal" class="edit" data-toggle="modal"><i class="material-icons"
-                                        data-toggle="tooltip" title="Edit">&#xE254;</i></a>
-                                <a href="#deleteEmployeeModal" class="delete" data-toggle="modal"><i
-                                        class="material-icons" data-toggle="tooltip" title="Delete">&#xE872;</i></a>
-                            </td>
-                        </tr> --}}
                     </tbody>
                 </table>
-                {{-- <div class="clearfix">
-                    <div class="hint-text">Showing <b>5</b> out of <b>25</b> entries</div>
-                    <ul class="pagination">
-                        <li class="page-item disabled"><a href="#">Previous</a></li>
-                        <li class="page-item"><a href="#" class="page-link">1</a></li>
-                        <li class="page-item"><a href="#" class="page-link">2</a></li>
-                        <li class="page-item active"><a href="#" class="page-link">3</a></li>
-                        <li class="page-item"><a href="#" class="page-link">4</a></li>
-                        <li class="page-item"><a href="#" class="page-link">5</a></li>
-                        <li class="page-item"><a href="#" class="page-link">Next</a></li>
-                    </ul>
-                </div> --}}
+
             </div>
         </div>
     </div>
-    <!-- Edit Modal HTML -->
+    <!-- add Modal HTML -->
     <div id="addEmployeeModal" class="modal fade">
         <div class="modal-dialog">
             <div class="modal-content">
-                <form method="post" action="{{ route('add-new-product') }}">
+                <form method="post" action="{{ route('users.add-new-product') }}" enctype="multipart/form-data">
                     @csrf
                     <div class="modal-header">
                         <h4 class="modal-title">Add Employee</h4>
@@ -491,11 +448,12 @@
                         </div>
                         <div class="form-group">
                             <label>Image</label>
-                            <input type="text" class="form-control" name="imange" required>
+                            <input type="file" name="image" id="image" accept=".jpg, .jpeg, .png" />
                         </div>
                         <div class="form-group">
                             <label>Description</label>
-                            <input type="text" class="form-control" name="description" required>
+                            <textarea class="form-control" name="description" id="exampleFormControlTextarea1" rows="3"
+                                required></textarea>
                         </div>
                         <div class="form-group">
                             <label>Amount</label>
@@ -507,19 +465,28 @@
                         </div>
                         <div class="form-group">
                             <label>Color</label>
-                            <input type="text" class="form-control" name="color" required>
-                        </div>
-                        <div class="form-group">
-                            <label>Brands</label>
-                            <input type="text" class="form-control" name="brand" required>
+
+                            <select name="color" class="form-control">
+                                <option value="1">Red</option>
+                                <option value="2">blue</option>
+                                <option value="3">Yellow</option>
+                            </select>
                         </div>
                         <div class="form-group">
                             <label>Supplier</label>
-                            <input type="text" class="form-control" name="supplier" required>
+                            <select name="supplier" class="form-control">
+                                @foreach ($suppliers as $item)
+                                    <option value={{ $item['id'] }}>{{ $item->name }}</option>
+                                @endforeach
+                            </select>
                         </div>
                         <div class="form-group">
                             <label>Category</label>
-                            <input type="text" class="form-control" name="category" required>
+                            <select name="category" class="form-control">
+                                @foreach ($categories as $item)
+                                    <option value={{ $item['id'] }}>{{ $item->name }}</option>
+                                @endforeach
+                            </select>
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -531,10 +498,12 @@
         </div>
     </div>
     <!-- Edit Modal HTML -->
+
     <div id="editEmployeeModal" class="modal fade">
         <div class="modal-dialog">
             <div class="modal-content">
-                <form>
+                <form id="modalForm">
+                    @csrf
                     <div class="modal-header">
                         <h4 class="modal-title">Edit Employee</h4>
                         <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
@@ -542,19 +511,50 @@
                     <div class="modal-body">
                         <div class="form-group">
                             <label>Name</label>
-                            <input type="text" class="form-control" required>
+                            <input type="hidden" name="idproductedit" id="idproductedit" />
+                            <input type="text" class="form-control" id="name" name="name" required>
                         </div>
                         <div class="form-group">
-                            <label>Email</label>
-                            <input type="email" class="form-control" required>
+                            <label>Image</label>
+                            <input type="file" name="image" id="imageedit" accept=".jpg, .jpeg, .png" />
                         </div>
                         <div class="form-group">
-                            <label>Address</label>
-                            <textarea class="form-control" required></textarea>
+                            <label>Description</label>
+                            <textarea class="form-control" name="description" id="description" rows="3"
+                                required></textarea>
                         </div>
                         <div class="form-group">
-                            <label>Phone</label>
-                            <input type="text" class="form-control" required>
+                            <label>Amount</label>
+                            <input type="text" class="form-control" id="amount" name="amount" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Price</label>
+                            <input type="text" class="form-control" id="price" name="price" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Color</label>
+
+                            <select name="color" id="color" class="form-control">
+                                <option value="1">Red</option>
+                                <option value="2">blue</option>
+                                <option value="3">Yellow</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Supplier</label>
+                            <select name="supplier" id="supplier" class="form-control">
+                                @foreach ($suppliers as $item)
+                                    <option value={{ $item['id'] }}>{{ $item->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Category</label>
+                            <select name="category" id="category" class="form-control">
+                                @foreach ($categories as $item)
+                                    <option value={{ $item['id'] }}>{{ $item->name }}</option>
+                                @endforeach
+                            </select>
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -587,5 +587,92 @@
         </div>
     </div>
 </body>
+<script>
+    $('#search').on('keyup', function() {
+
+        var text = $('#search').val();
+
+        $.ajax({
+
+            type: "GET",
+            url: "{{ route('users.search-admin-ajax') }}",
+            data: {
+                text: $('#search').val()
+            },
+            success: function(response) {
+                // response = JSON.parse(response);
+                // for (var patient of response) {
+                //     console.log(patient);
+                // }
+            }
+        });
+    });
+
+    // jQuery.ajaxSetup({
+    //             headers: {
+    //                 'X-CSRF-TOKEN': jQuery('meta[name="csrf-token"]').attr('content')
+    //             }
+    //         });
+
+    function updateProduct(id) {
+        $.get('getProduct/' + id, function(products) {
+            $("#idproductedit").val(products.id);
+            $("#name").val(products.name);
+            // $('"#image"').val(products.image);   
+            $("#description").val(products.description);
+            $("#amount").val(products.amount);
+            $("#price").val(products.price);
+            $("#color").val(products.color);
+            $('#editEmployeeModal').modal('show')
+        });
+        // $('#modalFormedit').modal(options);
+    }
+
+    $('#modalForm').submit(function(e) {
+        e.preventDefault();
+        var formData = new FormData(this);
+
+        var id = $('#idproductedit').val();
+        var name = $('#name').val();
+        // var image = $('input[id=imageedit]')[0].files[0].name;
+        // var image = $formData;
+        var description = $('#description').val();
+        var amount = $('#amount').val();
+        var price = $('#price').val();
+        var color = $('#color').val();
+        var supplier = $('#supplier').val();
+        var category = $('#category').val();
+        formData.append("name", id);
+        formData.append("name", name);
+        formData.append("image", $('input[id=imageedit]')[0].files[0]);
+        formData.append("icon", "");
+        formData.append("description", description);
+        formData.append("amount", amount);
+        formData.append("price", price);
+        formData.append("color", color);
+        formData.append("category", category);
+
+        $.ajax({
+            url: "{{ route('users.edit-product') }}",
+            type: "POST",
+            headers: {
+                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+            },
+            enctype: 'multipart/form-data',
+            processData: false, // tell jQuery not to process the data
+            contentType: false, // tell jQuery not to set contentType
+            data: formData,
+            success: function(response) {
+                location.reload();
+            },
+            error: function error(response) {
+                console.log(response);
+            }
+        });
+        return false;
+    })
+
+</script>
+
 
 </html>

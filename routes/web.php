@@ -38,15 +38,35 @@ Route::get('/register', function () {
 // Route::get('/category', function () {
 //     return view('category');
 // });
-Route::get('admin', [AdminController::class, 'index'])->name('admin');
-Route::post('admin', [AdminController::class, 'store'])->name('add-new-product');
-Route::post('login', [UserController::class, 'login'])->name('login');
-Route::post('register', [UserController::class, 'store'])->name('register');
-Route::get('category', [ProductController::class, 'index'])->name('category');
-Route::get('product-delete/{id}', [ProductController::class, 'destroy'])->name('product-delete');
+Route::get('/cart', function () {
+    return view('cart');
+});
+Route::group(['prefix' => 'users'], function () {
 
-// Route::post('login', [ManagersController::class, 'login'])->name('managers.login');
+    Route::get('admin', [AdminController::class, 'index'])->name('users.admin');
+    Route::post('admin-add', [AdminController::class, 'store'])->name('users.add-new-product');
+    Route::post('admin-edit-products', [AdminController::class, 'updateProduct'])->name('users.edit-product');
+    Route::post('login', [UserController::class, 'login'])->name('users.login');
+    Route::post('register', [UserController::class, 'store'])->name('users.register');
+    Route::get('category', [ProductController::class, 'index'])->name('users.category');
+    Route::get('product-delete/{id}', [ProductController::class, 'destroy'])->name('users.product-delete');
+    Route::get('getProduct/{id}', [AdminController::class, 'getProductById']);
+    Route::post('admin', [AdminController::class, 'search'])->name('users.search-admin');
+    Route::get('adminqwe', [AdminController::class, 'searchajax'])->name('users.search-admin-ajax');
 
-// Auth::routes();
 
-// Route::get('/home', 'HomeController@index')->name('home');
+
+    // Route::post('addimage', [AdminController::class, 'store'])
+    // Route::get('create', 'ImageController@create');
+    // Route::post('create', 'ImageController@store');
+});
+// Route::group(['prefix' => 'users'], function () {
+
+//     Route::get('admin', [AdminController::class, 'index'])->name('users.admin');
+//     Route::post('admin', [AdminController::class, 'store'])->name('add-new-product');
+//     Route::post('admin/{id}', [AdminController::class, 'store'])->name('edit-product');
+//     Route::post('login', [UserController::class, 'login'])->name('users.login');
+//     Route::post('register', [UserController::class, 'store'])->name('register');
+//     Route::get('category', [ProductController::class, 'index'])->name('category');
+//     Route::get('product-delete/{id}', [ProductController::class, 'destroy'])->name('product-delete');
+// });

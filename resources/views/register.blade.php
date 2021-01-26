@@ -35,7 +35,8 @@
                 <div class="col-lg-6">
                     <div class="login_form_inner register_form_inner">
                         <h3>Create an account</h3>
-                        <form method="post" class="row login_form" action="{{ route('register') }}" id="register_form">
+                        <form method="post" class="row login_form" action="{{ route('users.register') }}"
+                            id="register_form">
                             @csrf
                             <div class="col-md-12 form-group">
                                 <input type="text" class="form-control" id="name" name="name" placeholder="Name"
