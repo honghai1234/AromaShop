@@ -13,6 +13,7 @@
     <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/js/bootstrap.min.js"></script>
+
     <style>
         body {
             color: #566787;
@@ -337,6 +338,43 @@
                         </div>
                     </div>
                 </div>
+                <form id="search-form" method="post" action="{{ route('users.search-admin') }}"
+                    enctype="multipart/form-data">
+                    @csrf
+                    <div class="inner-form">
+                        <div class="basic-search">
+                            <div class="input-field">
+                                <input id="search" name="search" type="text" placeholder="Search..." />
+                                <div class="input-select">
+                                    <select id="color" data-trigger="" name="color">
+                                        <option value="0">all</option>
+                                        <option value="1">Red</option>
+                                        <option value="2">blue</option>
+                                        <option value="3">Yellow</option>
+                                    </select>
+                                </div>
+                                <div class="input-select">
+                                    <select id="color" data-trigger="" name="category">
+                                        <option value="0">all</option>
+                                        @foreach ($categories as $item)
+                                            <option value="{{ $item->id }}">{{ $item->name }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="advance-search">
+                            <div class="row third">
+                                <div class="input-field">
+                                    <button class="btn-search" type="submit" class="btn btn-block btn-primary"
+                                        id="search-product">Search</button>
+
+
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
                 <table class="table table-striped table-hover">
                     <thead>
                         <tr>
@@ -550,6 +588,26 @@
     </div>
 </body>
 <script>
+    $('#search').on('keyup', function() {
+
+        var text = $('#search').val();
+
+        $.ajax({
+
+            type: "GET",
+            url: "{{ route('users.search-admin-ajax') }}",
+            data: {
+                text: $('#search').val()
+            },
+            success: function(response) {
+                // response = JSON.parse(response);
+                // for (var patient of response) {
+                //     console.log(patient);
+                // }
+            }
+        });
+    });
+
     // jQuery.ajaxSetup({
     //             headers: {
     //                 'X-CSRF-TOKEN': jQuery('meta[name="csrf-token"]').attr('content')
@@ -614,26 +672,7 @@
         return false;
     })
 
-    // function loadImage(input, id) {
-
-    //     if (!input.files[0].name.match(/.(.jpg|.jpeg|.png)$/i)) {
-    //         alert('Please choose image with extension: .jpg,.jpeg,.png');
-    //         input.value = ''
-    //         return;
-    //     }
-
-    //     id = id || '#image-preview';
-    //     if (input.files && input.files[0]) {
-    //         var reader = new FileReader();
-    //         reader.onload = function(e) {
-    //             jQuery(id).attr('src', e.target.result)
-    //                 .width(40)
-    //                 .height(40);
-    //         };
-    //         reader.readAsDataURL(input.files[0]);
-    //     }
-    // }
-
 </script>
+
 
 </html>
