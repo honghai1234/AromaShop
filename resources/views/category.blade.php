@@ -1,9 +1,9 @@
 @extends('layout.guest-page')
-  
+
 @section('meta')
 <meta name="csrf-token" content="{{ csrf_token() }}">
 @endsection
-  
+
 @section('content')
     <!-- ================ start banner area ================= -->
     <section class="blog-banner-area" id="category">
@@ -114,16 +114,16 @@
                         </div>
                         <div>
                             <div class="input-group filter-bar-search">
-                                <input type="text" placeholder="Search">
+                                <input type="text" id="search-category" name="search-category" placeholder="Search">
                                 <div class="input-group-append">
-                                    <button type="button" onclick=""><i class="ti-search"></i></button>
+                                    <button type="button" name="search"><i class="ti-search"></i></button>
                                 </div>
                             </div>
                         </div>
                     </div>
 
                     <section class="lattest-product-area pb-40 category-list">
-                        <div class="row products-category">
+                        <div class="row products-category" id="products-category">
                             @foreach ($products as $item)
                                 <x-card_product type="error" :item="$item" />
                             @endforeach
@@ -285,6 +285,25 @@
 @endsection
 @section('script')
     <script>
+        var timeout;
+        $("#search-category").keyup(function() {
+        var $this = $(this);
+        if(timeout) {
+            clearTimeout(timeout);
+        }
+        timeout = setTimeout(function() {
+        $.ajax({
+                type: "POST",
+                url: "{{ route('users.search-category') }}",
+                data: 'name=' + $this.val(),
+            })
+            .fail(function() {
+                console.log("error");
+            }).success(function(response) {
+                console.log(response);
+            });
+        }, 3000);
+        });
         $.ajaxSetup({
             headers: {
                 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
@@ -310,8 +329,8 @@
             },
             success:function(response){
               console.log(response);
-              $(".category-list").empty().append(html);
-              $(".category-list").append("<b>Appended text</b>");
+            //   $(".category-list").empty().append(html);
+            $('.category-list').append(html)
             /*var html = '<div>asdsadas</div>';
                 html += '@foreach ($products as $item)';
                 html += '<p>aSasassadsadasdasd</p> />';
@@ -321,6 +340,7 @@
                 html += '{{ $products->links('vendor/pagination.view-nav') }}';
                 html += '</div>';
             $(".category-list").append(html);*/
+            // $("#divid").load(" #divid");
             },
             });
         });

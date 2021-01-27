@@ -78,8 +78,8 @@ class ProductController extends Controller
         Log::info($request->category);
 
         $product = Product::query();
-        if ($request->category) {
-            $product->where('categorie_id', $request->category);
+        if ($request->has('search')) {
+            $product->where('name', 'LIKE', '%' . $request->text . '%');
         }
         // if ($request->has('color')) {
         //     if ($request->color != 0) {
@@ -95,6 +95,20 @@ class ProductController extends Controller
         // return view('admin', [
         //     'products' => $products
         // ]);
+        return response()->json($products);
+    }
+    public function searchCategory(Request $request)
+    {
+        Log::info($request);
+        Log::info($request->category);
+
+        $product = Product::query();
+        if ($request->category) {
+            $product->where('categorie_id', $request->category);
+        }
+
+        $products =  $product->get();
+
         return response()->json($products);
     }
 

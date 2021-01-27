@@ -43,7 +43,9 @@ Route::group(['prefix' => 'users'], function () {
     Route::get('category', [ProductController::class, 'index'])->name('users.category');
     Route::get('product-delete/{id}', [ProductController::class, 'destroy'])->name('users.product-delete');
     Route::get('getProduct/{id}', [AdminController::class, 'getProductById']);
-    Route::post('admin', [AdminController::class, 'search'])->name('users.search-admin');
-    Route::get('adminqwe', [AdminController::class, 'searchajax'])->name('users.search-admin-ajax');
-    Route::post('adminsad', [ProductController::class, 'searchNav'])->name('users.search-nav');
+    Route::post('admin-search', [AdminController::class, 'search'])->name('users.search-admin');
+    Route::get('search-admin-ajax', [AdminController::class, 'searchajax'])->name('users.search-admin-ajax');
+    Route::post('search-page-admin', [ProductController::class, 'searchNav'])->name('users.search-nav');
+    Route::post('search-page-category', [ProductController::class, 'searchCategory'])->name('users.search-category');
+
 });
