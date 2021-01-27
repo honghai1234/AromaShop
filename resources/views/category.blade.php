@@ -1,4 +1,9 @@
 @extends('layout.guest-page')
+  
+@section('meta')
+<meta name="csrf-token" content="{{ csrf_token() }}">
+@endsection
+  
 @section('content')
     <!-- ================ start banner area ================= -->
     <section class="blog-banner-area" id="category">
@@ -32,11 +37,10 @@
                                     <ul>
                                         @foreach ($categorys as $item)
                                             <li class="filter-list"><input class="pixel-radio" type="radio" id="men"
-                                                    name="brand"><label for="men">{{ $item['name'] }}<span>
+                                                    name="brand" value="{{ $item['id'] }}"><label
+                                                    for="men">{{ $item['name'] }}<span>
                                                         (3600)</span></label></li>
                                         @endforeach
-
-
                                     </ul>
                                 </form>
                             </li>
@@ -65,10 +69,10 @@
                             <div class="head">Color</div>
                             <form action="#">
                                 <ul>
-
                                     @foreach ($querys as $item)
-                                        <li class="filter-list"><input class="pixel-radio" type="radio" id="black"
-                                                name="color"><label
+                                        <li class="filter-list"><input class="pixel-radio" type="radio"
+                                                id="radio-color-category" onclick="checkRadio(a)" data-id={{ $item->color }}
+                                                name="radio-color-category"><label
                                                 for="black">{{ arrayColor($item->color) }}<span>({{ $counted[$item['color']] }})</span></label>
                                         </li>
                                     @endforeach
@@ -112,21 +116,24 @@
                             <div class="input-group filter-bar-search">
                                 <input type="text" placeholder="Search">
                                 <div class="input-group-append">
-                                    <button type="button"><i class="ti-search"></i></button>
+                                    <button type="button" onclick=""><i class="ti-search"></i></button>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    <!-- End Filter Bar -->
-                    <!-- Start Best Seller -->
+
                     <section class="lattest-product-area pb-40 category-list">
-                        <div class="row">
+                        <div class="row products-category">
                             @foreach ($products as $item)
                                 <x-card_product type="error" :item="$item" />
                             @endforeach
                         </div>
+                        <div class="d-print-inline-block">
+
+                            {{ $products->links('vendor/pagination.view-nav') }}
+                        </div>
                     </section>
-                    <!-- End Best Seller -->
+
                 </div>
             </div>
         </div>
@@ -275,4 +282,48 @@
             </div>
         </div>
     </section>
+@endsection
+@section('script')
+    <script>
+        $.ajaxSetup({
+            headers: {
+                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+            }
+        });
+        $('input:radio[name="brand"]').change(
+            function(e) {
+                e.preventDefault();
+                // var formData = new FormData(this);
+                let category = 0;
+                let color = 0;
+                let supplier= 0;
+                let _token   = $('meta[name="csrf-token"]').attr('content');
+                category = $('input[name="brand"]:checked').val();
+                console.log($('input[name="brand"]:checked').val());
+
+        $.ajax({
+            url:  "{{ route('users.search-nav') }}",
+            type:"POST",
+            data:{
+              category: category,
+              _token: _token
+            },
+            success:function(response){
+              console.log(response);
+              $(".category-list").empty().append(html);
+              $(".category-list").append("<b>Appended text</b>");
+            /*var html = '<div>asdsadas</div>';
+                html += '@foreach ($products as $item)';
+                html += '<p>aSasassadsadasdasd</p> />';
+                html += '@endforeach';
+                html += '</div>';
+                html += '<div class="d-print-inline-block">';
+                html += '{{ $products->links('vendor/pagination.view-nav') }}';
+                html += '</div>';
+            $(".category-list").append(html);*/
+            },
+            });
+        });
+
+    </script>
 @endsection

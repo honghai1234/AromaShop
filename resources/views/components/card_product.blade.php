@@ -3,7 +3,7 @@
         <div class="card-product__img">
             <img class="card-img" src="/{{ $item['image'] }}" alt="">
             <ul class="card-product__imgOverlay">
-                <li><button><i class="ti-search"></i></button></li>
+                <li><button id="asd"><i class="ti-search"></i></button></li>
                 <li><button><i class="ti-shopping-cart"></i></button></li>
                 <li><button><i class="ti-heart"></i></button></li>
             </ul>

@@ -22,13 +22,13 @@ class ProductController extends Controller
      */
     public function index()
     {
-        $products = Product::where('delete_flg', '<>', 1)->get();
-        // $products = Product::where('delete_flg', '<>', 1)->get();
-        $counted = $products->countBy('color');
+        $countBy = Product::where('delete_flg', '<>', 1)->get();
+        $products = Product::where('delete_flg', '<>', 1)->paginate(6);
+        $counted = $countBy->countBy('color');
         $counted->all();
         $query = Product::distinct()->get('color');
 
-        $categorys = Category::all('name');
+        $categorys = Category::all('name', 'id');
         // $array = ['0'=>'Red'];
         // return $data;s
         return view('category', [
@@ -71,6 +71,31 @@ class ProductController extends Controller
     public function update(Request $request, $id)
     {
         //
+    }
+    public function searchNav(Request $request)
+    {
+        Log::info($request);
+        Log::info($request->category);
+
+        $product = Product::query();
+        if ($request->category) {
+            $product->where('categorie_id', $request->category);
+        }
+        // if ($request->has('color')) {
+        //     if ($request->color != 0) {
+        //         $product->where('supplier_id', $request->supplier);
+        //     }
+        // }
+        // if ($request->has('color')) {
+        //     if ($request->color != 0) {
+        //         $product->where('color', $request->color);
+        //     }
+        // }
+        $products =  $product->get();
+        // return view('admin', [
+        //     'products' => $products
+        // ]);
+        return response()->json($products);
     }
 
     /**
