@@ -29,15 +29,7 @@ Route::get('/login', function () {
 Route::get('/register', function () {
     return view('register');
 });
-// Route::get('/admin', function () {
-//     return view('admin');
-// });
-// Route::get('/single-product', function () {
-//     return view('single-product');
-// });
-// Route::get('/category', function () {
-//     return view('category');
-// });
+
 Route::get('/cart', function () {
     return view('cart');
 });
@@ -53,20 +45,5 @@ Route::group(['prefix' => 'users'], function () {
     Route::get('getProduct/{id}', [AdminController::class, 'getProductById']);
     Route::post('admin', [AdminController::class, 'search'])->name('users.search-admin');
     Route::get('adminqwe', [AdminController::class, 'searchajax'])->name('users.search-admin-ajax');
-
-
-
-    // Route::post('addimage', [AdminController::class, 'store'])
-    // Route::get('create', 'ImageController@create');
-    // Route::post('create', 'ImageController@store');
+    Route::post('adminsad', [ProductController::class, 'searchNav'])->name('users.search-nav');
 });
-// Route::group(['prefix' => 'users'], function () {
-
-//     Route::get('admin', [AdminController::class, 'index'])->name('users.admin');
-//     Route::post('admin', [AdminController::class, 'store'])->name('add-new-product');
-//     Route::post('admin/{id}', [AdminController::class, 'store'])->name('edit-product');
-//     Route::post('login', [UserController::class, 'login'])->name('users.login');
-//     Route::post('register', [UserController::class, 'store'])->name('register');
-//     Route::get('category', [ProductController::class, 'index'])->name('category');
-//     Route::get('product-delete/{id}', [ProductController::class, 'destroy'])->name('product-delete');
-// });

@@ -1,0 +1,1763 @@
+[1mdiff --git a/app/Http/Controllers/AdminController.php b/app/Http/Controllers/AdminController.php[m
+[1mindex 4d94aa7..18da65b 100644[m
+[1m--- a/app/Http/Controllers/AdminController.php[m
+[1m+++ b/app/Http/Controllers/AdminController.php[m
+[36m@@ -2,14 +2,61 @@[m
+ [m
+ namespace App\Http\Controllers;[m
+ [m
+[32m+[m[32muse App\model\Category;[m
+ use App\model\Product;[m
+[32m+[m[32muse App\model\Supplier;[m
+ use Exception;[m
+ use Illuminate\Http\Request;[m
+ use Illuminate\Support\Facades\DB;[m
+ use Illuminate\Support\Facades\Log;[m
+[32m+[m[32muse Illuminate\Support\Facades\Storage;[m
+[32m+[m[32muse Illuminate\Support\Facades\Validator;[m
+ [m
+ class AdminController extends Controller[m
+ {[m
+[32m+[m[32m    public function searchajax(Request $request)[m
+[32m+[m[32m    {[m
+[32m+[m
+[32m+[m[32m        Log::info($request->text);[m
+[32m+[m[32m        $product = Product::query();[m
+[32m+[m
+[32m+[m[32m        if ($request->has('search')) {[m
+[32m+[m[32m            $product->where('name', 'LIKE', '%' . $request->text . '%');[m
+[32m+[m[32m        }[m
+[32m+[m
+[32m+[m[32m        return response()->json($product);[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    public function search(Request $request)[m
+[32m+[m[32m    {[m
+[32m+[m[32m        $categories = Category::get();[m
+[32m+[m[32m        $suppliers = Supplier::get();[m
+[32m+[m[32m        $query = Product::distinct()->get('color');[m
+[32m+[m[32m        $product = Product::query();[m
+[32m+[m
+[32m+[m[32m        if ($request->has('search')) {[m
+[32m+[m[32m            $product->where('name', 'LIKE', '%' . $request->search . '%');[m
+[32m+[m[32m        }[m
+[32m+[m
+[32m+[m[32m        if ($request->has('color')) {[m
+[32m+[m[32m            if ($request->color != 0) {[m
+[32m+[m[32m                $product->where('color', $request->color);[m
+[32m+[m[32m            }[m
+[32m+[m[32m        }[m
+[32m+[m
+[32m+[m[32m        if ($request->has('category')) {[m
+[32m+[m[32m            if ($request->category != 0) {[m
+[32m+[m[32m                $product->where('categorie_id', $request->category);[m
+[32m+[m[32m            }[m
+[32m+[m[32m        }[m
+[32m+[m[32m        $products =  $product->get();[m
+[32m+[m[32m        return view('admin', [[m
+[32m+[m[32m            'categories' => $categories,[m
+[32m+[m[32m            'suppliers' => $suppliers,[m
+[32m+[m[32m            'querys' => $query,[m
+[32m+[m[32m            'products' => $products[m
+[32m+[m[32m        ]);[m
+[32m+[m[32m    }[m
+     /**[m
+      * Display a listing of the resource.[m
+      *[m
+[36m@@ -18,14 +65,20 @@[m [mclass AdminController extends Controller[m
+     public function index()[m
+     {[m
+         $products = Product::where('delete_flg', '<>', 1)->get();[m
+[31m-        $color = ['red', 'blue', 'yellow'];[m
+[31m-[m
+[32m+[m[32m        $suppliers = Supplier::get();[m
+[32m+[m[32m        $categories = Category::get();[m
+[32m+[m[32m        $query = Product::distinct()->get('color');[m
+         return view('admin', [[m
+             'products' => $products,[m
+[31m-            'arcolor' => $color[m
+[32m+[m[32m            'suppliers' => $suppliers, 'querys' => $query,[m
+[32m+[m[32m            'categories' => $categories[m
+         ]);[m
+     }[m
+[31m-[m
+[32m+[m[32m    public function getProductById($id)[m
+[32m+[m[32m    {[m
+[32m+[m[32m        $products = Product::find($id);[m
+[32m+[m[32m        return response()->json($products);[m
+[32m+[m[32m    }[m
+     /**[m
+      * Store a newly created resource in storage.[m
+      *[m
+[36m@@ -34,29 +87,55 @@[m [mclass AdminController extends Controller[m
+      */[m
+     public function store(Request $request)[m
+     {[m
+[32m+[m[32m        $productvalidator = Validator::make($request->all(), [[m
+[32m+[m[32m            'name' => 'required|max:150',[m
+[32m+[m[32m            'description' => 'required|max:150',[m
+[32m+[m[32m            'image' => 'required|image|mimes:jpg,png,jpeg|max:500000',[m
+[32m+[m[32m            'color' => 'required|integer|exists:products,color',[m
+[32m+[m[32m            'supplier' => 'required|integer|exists:products,supplier_id',[m
+[32m+[m[32m            'category' => 'required|integer|exists:products,categorie_id',[m
+[32m+[m[32m            'amount' => 'required|integer'[m
+[32m+[m[32m        ]);[m
+[32m+[m
+[32m+[m[32m        if ($productvalidator->fails()) {[m
+[32m+[m[32m            return redirect()->route('users.admin')[m
+[32m+[m[32m                ->withErrors($productvalidator)[m
+[32m+[m[32m                ->withInput();[m
+[32m+[m[32m        }[m
+[32m+[m
+         try {[m
+[31m-            $register = new Product();[m
+[32m+[m[32m            $product = new Product();[m
+             if ($request->get('id')) {[m
+[31m-                $register = Product::find($request->get('id'));[m
+[32m+[m[32m                $product = Product::find($request->get('id'));[m
+             }[m
+[31m-            $register->name = $request->get('name');[m
+[31m-            $register->image = " ";[m
+[31m-            $register->icon = " ";[m
+[31m-            $register->description = $request->get('description');[m
+[31m-            $register->amount = $request->get('amount');[m
+[31m-            $register->price = $request->get('price');[m
+[31m-            $register->color = $request->get('color');[m
+[31m-            $register->brands = $request->get('brand');[m
+[31m-            $register->delete_flg = "0";[m
+[31m-            $register->supplier_id = $request->get('supplier');[m
+[31m-            $register->categorie_id = $request->get('category');[m
+[31m-[m
+[31m-            $register->save();[m
+[31m-            return redirect()->route('admin')->withInput();[m
+[32m+[m[32m            $product->name = $request->get('name');[m
+[32m+[m[32m            if ($request->hasFile('image')) {[m
+[32m+[m[32m                $file = $request->file('image');[m
+[32m+[m[32m                $filename  = time() . '.' . $file->getClientOriginalExtension();[m
+[32m+[m[32m                $destinationPath = 'img/product' . '/';[m
+[32m+[m[32m                $file->move($destinationPath, $filename);[m
+[32m+[m[32m                $path = 'img/product/' . $filename;[m
+[32m+[m[32m                $product->image = $path;[m
+[32m+[m[32m            } else {[m
+[32m+[m[32m                // return $request;[m
+[32m+[m[32m                $product->image = '';[m
+[32m+[m[32m            }[m
+[32m+[m[32m            $product->icon = " ";[m
+[32m+[m[32m            $product->description = $request->get('description');[m
+[32m+[m[32m            $product->amount = $request->get('amount');[m
+[32m+[m[32m            $product->price = $request->get('price');[m
+[32m+[m[32m            $product->color = $request->get('color');[m
+[32m+[m[32m            $product->brands = " ";[m
+[32m+[m[32m            $product->delete_flg = "0";[m
+[32m+[m[32m            $product->supplier_id = $request->get('supplier');[m
+[32m+[m[32m            $product->categorie_id = $request->get('category');[m
+[32m+[m[32m            $product->save();[m
+[32m+[m[32m            $request->session()->flash('success', trans('create-success'));[m
+[32m+[m[32m            return redirect()->route('users.admin');[m
+         } catch (Exception $e) {[m
+             DB::rollback();[m
+             Log::error($e->getMessage());[m
+[31m-            return redirect()->route('admin')[m
+[32m+[m[32m            return redirect()->route('users.admin')[m
+                 ->withErrors([trans('messages.system-error')])[m
+                 ->withInput();[m
+         }[m
+[36m@@ -72,7 +151,57 @@[m [mclass AdminController extends Controller[m
+     {[m
+         //[m
+     }[m
+[32m+[m[32m    public function updateProduct(Request $request)[m
+[32m+[m[32m    {[m
+[32m+[m[32m        $productvali = Validator::make($request->all(), [[m
+[32m+[m[32m            'name' => 'required|max:150',[m
+[32m+[m[32m            'description' => 'required|max:150',[m
+[32m+[m[32m            'image' => 'required|image|mimes:jpg,png,jpeg|max:500000',[m
+[32m+[m[32m            'color' => 'required|integer|exists:products,color',[m
+[32m+[m[32m            'supplier' => 'required|integer|exists:products,supplier_id',[m
+[32m+[m[32m            'category' => 'required|integer|exists:products,categorie_id',[m
+[32m+[m[32m            'amount' => 'required|integer'[m
+[32m+[m[32m        ]);[m
+ [m
+[32m+[m[32m        if ($productvali->fails()) {[m
+[32m+[m[32m            // return back()->route('users.admin')->withErrors($productvali)->withInput();[m
+[32m+[m
+[32m+[m[32m            return response()->json([[m
+[32m+[m[32m                'errors' => $productvali->errors()[m
+[32m+[m[32m            ], 500);[m
+[32m+[m[32m        }[m
+[32m+[m
+[32m+[m[32m        try {[m
+[32m+[m[32m            $product = Product::find($request->id);[m
+[32m+[m[32m            $product->name = $request->name;[m
+[32m+[m[32m            if ($request->hasFile('image')) {[m
+[32m+[m[32m                $extension = $request->image->extension();[m
+[32m+[m[32m                $name = $request->image->getClientOriginalName();[m
+[32m+[m[32m                $request->file('image')->storeAs('/public', $name);[m
+[32m+[m[32m                $path = 'storage/' . $name;[m
+[32m+[m[32m                Log::info($name);[m
+[32m+[m[32m                $product->image = $path;[m
+[32m+[m[32m            }[m
+[32m+[m[32m            $product->icon = "";[m
+[32m+[m[32m            $product->description = $request->description;[m
+[32m+[m[32m            $product->amount = $request->amount;[m
+[32m+[m[32m            $product->price = $request->price;[m
+[32m+[m[32m            $product->color = $request->color;[m
+[32m+[m[32m            $product->brands = "";[m
+[32m+[m[32m            $product->delete_flg = "0";[m
+[32m+[m[32m            $product->supplier_id = $request->supplier;[m
+[32m+[m[32m            $product->categorie_id = $request->category;[m
+[32m+[m[32m            $product->save();[m
+[32m+[m[32m            $request->session()->flash('success', trans('edit-success'));[m
+[32m+[m[32m            return response()->json('success');[m
+[32m+[m[32m        } catch (Exception $e) {[m
+[32m+[m[32m            DB::rollback();[m
+[32m+[m[32m            Log::error($e->getMessage());[m
+[32m+[m[32m            return redirect()->route('users.admin')[m
+[32m+[m[32m                ->withErrors([trans('messages.system-error')])[m
+[32m+[m[32m                ->withInput();[m
+[32m+[m[32m        }[m
+[32m+[m[32m    }[m
+     /**[m
+      * Update the specified resource in storage.[m
+      *[m
+[1mdiff --git a/app/Http/Controllers/ProductController.php b/app/Http/Controllers/ProductController.php[m
+[1mindex cbf77f0..7a2b759 100644[m
+[1m--- a/app/Http/Controllers/ProductController.php[m
+[1m+++ b/app/Http/Controllers/ProductController.php[m
+[36m@@ -22,16 +22,12 @@[m [mclass ProductController extends Controller[m
+      */[m
+     public function index()[m
+     {[m
+[31m-        $products = Product::all('name', 'price', 'image', 'color');[m
+[32m+[m[32m        $products = Product::where('delete_flg', '<>', 1)->get();[m
+[32m+[m[32m        // $products = Product::where('delete_flg', '<>', 1)->get();[m
+         $counted = $products->countBy('color');[m
+         $counted->all();[m
+         $query = Product::distinct()->get('color');[m
+[31m-        $arrayColor = [[m
+[31m-            "",[m
+[31m-            "red",[m
+[31m-            "yellow",[m
+[31m-            "blue"[m
+[31m-        ];[m
+[32m+[m
+         $categorys = Category::all('name');[m
+         // $array = ['0'=>'Red'];[m
+         // return $data;s[m
+[36m@@ -39,7 +35,6 @@[m [mclass ProductController extends Controller[m
+             'products' => $products,[m
+             'categorys' => $categorys,[m
+             'querys' => $query,[m
+[31m-            'arrayColor' => $arrayColor,[m
+             'counted' => $counted[m
+         ]);[m
+     }[m
+[36m@@ -93,12 +88,12 @@[m [mclass ProductController extends Controller[m
+             $model->delete_flg = "1";[m
+             $model->save();[m
+             DB::commit();[m
+[31m-            return redirect()->route('admin');[m
+[32m+[m[32m            return redirect()->route('users.admin');[m
+         } catch (Exception $e) {[m
+             DB::rollback();[m
+             Log::error($e->getMessage());[m
+ [m
+[31m-            return redirect()->route('admin')[m
+[32m+[m[32m            return redirect()->route('users.admin')[m
+                 ->withErrors([trans('messages.system-error')])[m
+                 ->withInput();[m
+         }[m
+[1mdiff --git a/app/Http/Controllers/UserController.php b/app/Http/Controllers/UserController.php[m
+[1mindex 2c54864..91b2be3 100644[m
+[1m--- a/app/Http/Controllers/UserController.php[m
+[1m+++ b/app/Http/Controllers/UserController.php[m
+[36m@@ -20,7 +20,7 @@[m [mclass UserController extends Controller[m
+             'password' => 'required|min:8|max:100',[m
+         ]);[m
+         if ($validator->fails()) {[m
+[31m-            return redirect()->route('login')[m
+[32m+[m[32m            return redirect()->route('users.login')[m
+                 ->withErrors($validator)[m
+                 ->withInput();[m
+         }[m
+[36m@@ -30,10 +30,10 @@[m [mclass UserController extends Controller[m
+ [m
+                 Auth::guard('users')->login($user);[m
+ [m
+[31m-                return redirect()->route('category');[m
+[32m+[m[32m                return redirect()->route('users.category');[m
+             } else {[m
+                 // users.login[m
+[31m-                return redirect()->route('login')[m
+[32m+[m[32m                return redirect()->route('users.login')[m
+                     ->withErrors([trans('messages.login-fail')])[m
+                     ->withInput();[m
+             }[m
+[36m@@ -41,7 +41,7 @@[m [mclass UserController extends Controller[m
+             DB::rollback();[m
+             Log::error($e->getMessage());[m
+ [m
+[31m-            return redirect()->route('login')[m
+[32m+[m[32m            return redirect()->route('users.login')[m
+                 ->withErrors([trans('messages.system-error')])[m
+                 ->withInput();[m
+         }[m
+[36m@@ -70,7 +70,7 @@[m [mclass UserController extends Controller[m
+             'password_confirmation' => 'required|min:8'[m
+         ]);[m
+         if ($validator->fails()) {[m
+[31m-            return redirect()->route('register')[m
+[32m+[m[32m            return redirect()->route('users.register')[m
+                 ->withErrors($validator)[m
+                 ->withInput();[m
+         }[m
+[36m@@ -85,7 +85,7 @@[m [mclass UserController extends Controller[m
+             foreach ($user_name as $item) {[m
+                 if ($item = $request->get('user_name')) {[m
+                     $validator = "user da ton tai";[m
+[31m-                    return redirect()->route('register')->withErrors($validator)[m
+[32m+[m[32m                    return redirect()->route('users.register')->withErrors($validator)[m
+                         ->withInput();;[m
+                 }[m
+             }[m
+[36m@@ -105,7 +105,7 @@[m [mclass UserController extends Controller[m
+             DB::rollback();[m
+             Log::error($e->getMessage());[m
+ [m
+[31m-            return redirect()->route('register')[m
+[32m+[m[32m            return redirect()->route('users.register')[m
+                 ->withErrors([trans('messages.system-error')])[m
+                 ->withInput();[m
+         }[m
+[1mdiff --git a/app/Model/Product.php b/app/Model/Product.php[m
+[1mindex 8042c9e..724ba25 100644[m
+[1m--- a/app/Model/Product.php[m
+[1m+++ b/app/Model/Product.php[m
+[36m@@ -6,6 +6,15 @@[m [muse Illuminate\Database\Eloquent\Model;[m
+ [m
+ class Product extends Model[m
+ {[m
+[31m-    protected $fillable = ['name', 'price', 'image'];[m
+[32m+[m[32m    protected $table = 'products';[m
+[32m+[m[32m    protected $fillable = ['name', 'iamge', 'description', 'amount', 'price', 'color'];[m
+     public $timestamps = false;[m
+[32m+[m[32m    public function supplier()[m
+[32m+[m[32m    {[m
+[32m+[m[32m        return $this->belongsTo(Supplier::class);[m
+[32m+[m[32m    }[m
+[32m+[m[32m    public function category()[m
+[32m+[m[32m    {[m
+[32m+[m[32m        return $this->belongsTo(Category::class);[m
+[32m+[m[32m    }[m
+ }[m
+[1mdiff --git a/app/Utils/helper.php b/app/Utils/helper.php[m
+[1mnew file mode 100644[m
+[1mindex 0000000..5d4d5e4[m
+[1m--- /dev/null[m
+[1m+++ b/app/Utils/helper.php[m
+[36m@@ -0,0 +1,26 @@[m
+[32m+[m[32m<?php[m
+[32m+[m
+[32m+[m
+[32m+[m[32mif (!function_exists('formatDate')) {[m
+[32m+[m[32m    function formatDate($date, string $format = 'Y/m/d')[m
+[32m+[m[32m    {[m
+[32m+[m[32m        if ($date instanceof \Carbon\Carbon) {[m
+[32m+[m[32m            return $date->format($format);[m
+[32m+[m[32m        }[m
+[32m+[m
+[32m+[m[32m        return $date;[m
+[32m+[m[32m    }[m
+[32m+[m[32m}[m
+[32m+[m[32mif (!function_exists('arrayColor')) {[m
+[32m+[m[32m    function arrayColor($color)[m
+[32m+[m[32m    {[m
+[32m+[m[32m        $array = ["", "Red", "Blue", "Yellow"];[m
+[32m+[m[32m        return $array[$color];[m
+[32m+[m[32m    }[m
+[32m+[m[32m}[m
+[32m+[m[32mif (!function_exists('FormatMoney')) {[m
+[32m+[m[32m    function FormatMoney($number)[m
+[32m+[m[32m    {[m
+[32m+[m[32m        echo number_format($number, 0, '', ',');[m
+[32m+[m[32m    }[m
+[32m+[m[32m}[m
+[1mdiff --git a/app/View/Components/search.php b/app/View/Components/search.php[m
+[1mnew file mode 100644[m
+[1mindex 0000000..0ca6849[m
+[1m--- /dev/null[m
+[1m+++ b/app/View/Components/search.php[m
+[36m@@ -0,0 +1,28 @@[m
+[32m+[m[32m<?php[m
+[32m+[m
+[32m+[m[32mnamespace App\View\Components;[m
+[32m+[m
+[32m+[m[32muse Illuminate\View\Component;[m
+[32m+[m
+[32m+[m[32mclass search extends Component[m
+[32m+[m[32m{[m
+[32m+[m[32m    /**[m
+[32m+[m[32m     * Create a new component instance.[m
+[32m+[m[32m     *[m
+[32m+[m[32m     * @return void[m
+[32m+[m[32m     */[m
+[32m+[m[32m    public function __construct()[m
+[32m+[m[32m    {[m
+[32m+[m[32m        //[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    /**[m
+[32m+[m[32m     * Get the view / contents that represent the component.[m
+[32m+[m[32m     *[m
+[32m+[m[32m     * @return \Illuminate\View\View|string[m
+[32m+[m[32m     */[m
+[32m+[m[32m    public function render()[m
+[32m+[m[32m    {[m
+[32m+[m[32m        return view('components.search');[m
+[32m+[m[32m    }[m
+[32m+[m[32m}[m
+[1mdiff --git a/composer.json b/composer.json[m
+[1mindex 6725f25..6643707 100644[m
+[1m--- a/composer.json[m
+[1m+++ b/composer.json[m
+[36m@@ -40,6 +40,9 @@[m
+         "classmap": [[m
+             "database/seeds",[m
+             "database/factories"[m
+[32m+[m[32m        ],[m
+[32m+[m[32m        "files": [[m
+[32m+[m[32m            "app/Utils/helper.php"[m
+         ][m
+     },[m
+     "autoload-dev": {[m
+[36m@@ -61,4 +64,4 @@[m
+             "@php artisan key:generate --ansi"[m
+         ][m
+     }[m
+[31m-}[m
+[32m+[m[32m}[m
+\ No newline at end of file[m
+[1mdiff --git a/config/app.php b/config/app.php[m
+[1mindex 8409e00..187e056 100644[m
+[1m--- a/config/app.php[m
+[1m+++ b/config/app.php[m
+[36m@@ -174,6 +174,7 @@[m [mreturn [[m
+         // App\Providers\BroadcastServiceProvider::class,[m
+         App\Providers\EventServiceProvider::class,[m
+         App\Providers\RouteServiceProvider::class,[m
+[32m+[m[32m        // App\Utils\helper\HelperServiceProvider::class[m
+ [m
+     ],[m
+ [m
+[1mdiff --git a/config/filesystems.php b/config/filesystems.php[m
+[1mindex 94c8112..8257b8c 100644[m
+[1m--- a/config/filesystems.php[m
+[1m+++ b/config/filesystems.php[m
+[36m@@ -51,7 +51,7 @@[m [mreturn [[m
+         'public' => [[m
+             'driver' => 'local',[m
+             'root' => storage_path('app/public'),[m
+[31m-            'url' => env('APP_URL').'/storage',[m
+[32m+[m[32m            'url' => env('APP_URL') . '/storage',[m
+             'visibility' => 'public',[m
+         ],[m
+ [m
+[1mdiff --git a/public/Images/1611546978.jpg b/public/Images/1611546978.jpg[m
+[1mnew file mode 100644[m
+[1mindex 0000000..f5f45ef[m
+Binary files /dev/null and b/public/Images/1611546978.jpg differ
+[1mdiff --git a/public/css/adminsearch.css b/public/css/adminsearch.css[m
+[1mnew file mode 100644[m
+[1mindex 0000000..2ea44b0[m
+[1m--- /dev/null[m
+[1m+++ b/public/css/adminsearch.css[m
+[36m@@ -0,0 +1,1141 @@[m
+[32m+[m[32mhtml {[m
+[32m+[m[32m    line-height: 1.15;[m
+[32m+[m[32m    /* 1 */[m
+[32m+[m[32m    -ms-text-size-adjust: 100%;[m
+[32m+[m[32m    /* 2 */[m
+[32m+[m[32m    -webkit-text-size-adjust: 100%;[m
+[32m+[m[32m    /* 2 */[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  /* Sections[m
+[32m+[m[32m     ========================================================================== */[m
+[32m+[m[32m  /**[m
+[32m+[m[32m   * Remove the margin in all browsers (opinionated).[m
+[32m+[m[32m   */[m
+[32m+[m[32m  body {[m
+[32m+[m[32m    margin: 0;[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  /**[m
+[32m+[m[32m   * Add the correct display in IE 9-.[m
+[32m+[m[32m   */[m
+[32m+[m[32m  article,[m
+[32m+[m[32m  aside,[m
+[32m+[m[32m  footer,[m
+[32m+[m[32m  header,[m
+[32m+[m[32m  nav,[m
+[32m+[m[32m  section {[m
+[32m+[m[32m    display: block;[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  /**[m
+[32m+[m[32m   * Correct the font size and margin on `h1` elements within `section` and[m
+[32m+[m[32m   * `article` contexts in Chrome, Firefox, and Safari.[m
+[32m+[m[32m   */[m
+[32m+[m[32m  h1 {[m
+[32m+[m[32m    font-size: 2em;[m
+[32m+[m[32m    margin: 0.67em 0;[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  /* Grouping content[m
+[32m+[m[32m     ========================================================================== */[m
+[32m+[m[32m  /**[m
+[32m+[m[32m   * Add the correct display in IE 9-.[m
+[32m+[m[32m   * 1. Add the correct display in IE.[m
+[32m+[m[32m   */[m
+[32m+[m[32m  figcaption,[m
+[32m+[m[32m  figure,[m
+[32m+[m[32m  main {[m
+[32m+[m[32m    /* 1 */[m
+[32m+[m[32m    display: block;[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  /**[m
+[32m+[m[32m   * Add the correct margin in IE 8.[m
+[32m+[m[32m   */[m
+[32m+[m[32m  figure {[m
+[32m+[m[32m    margin: 1em 40px;[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  /**[m
+[32m+[m[32m   * 1. Add the correct box sizing in Firefox.[m
+[32m+[m[32m   * 2. Show the overflow in Edge and IE.[m
+[32m+[m[32m   */[m
+[32m+[m[32m  hr {[m
+[32m+[m[32m    box-sizing: content-box;[m
+[32m+[m[32m    /* 1 */[m
+[32m+[m[32m    height: 0;[m
+[32m+[m[32m    /* 1 */[m
+[32m+[m[32m    overflow: visible;[m
+[32m+[m[32m    /* 2 */[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  /**[m
+[32m+[m[32m   * 1. Correct the inheritance and scaling of font size in all browsers.[m
+[32m+[m[32m   * 2. Correct the odd `em` font sizing in all browsers.[m
+[32m+[m[32m   */[m
+[32m+[m[32m  pre {[m
+[32m+[m[32m    font-family: monospace, monospace;[m
+[32m+[m[32m    /* 1 */[m
+[32m+[m[32m    font-size: 1em;[m
+[32m+[m[32m    /* 2 */[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  /* Text-level semantics[m
+[32m+[m[32m     ========================================================================== */[m
+[32m+[m[32m  /**[m
+[32m+[m[32m   * 1. Remove the gray background on active links in IE 10.[m
+[32m+[m[32m   * 2. Remove gaps in links underline in iOS 8+ and Safari 8+.[m
+[32m+[m[32m   */[m
+[32m+[m[32m  a {[m
+[32m+[m[32m    background-color: transparent;[m
+[32m+[m[32m    /* 1 */[m
+[32m+[m[32m    -webkit-text-decoration-skip: objects;[m
+[32m+[m[32m    /* 2 */[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  /**[m
+[32m+[m[32m   * 1. Remove the bottom border in Chrome 57- and Firefox 39-.[m
+[32m+[m[32m   * 2. Add the correct text decoration in Chrome, Edge, IE, Opera, and Safari.[m
+[32m+[m[32m   */[m
+[32m+[m[32m  abbr[title] {[m
+[32m+[m[32m    border-bottom: none;[m
+[32m+[m[32m    /* 1 */[m
+[32m+[m[32m    text-decoration: underline;[m
+[32m+[m[32m    /* 2 */[m
+[32m+[m[32m    text-decoration: underline dotted;[m
+[32m+[m[32m    /* 2 */[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  /**[m
+[32m+[m[32m   * Prevent the duplicate application of `bolder` by the next rule in Safari 6.[m
+[32m+[m[32m   */[m
+[32m+[m[32m  b,[m
+[32m+[m[32m  strong {[m
+[32m+[m[32m    font-weight: inherit;[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  /**[m
+[32m+[m[32m   * Add the correct font weight in Chrome, Edge, and Safari.[m
+[32m+[m[32m   */[m
+[32m+[m[32m  b,[m
+[32m+[m[32m  strong {[m
+[32m+[m[32m    font-weight: bolder;[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  /**[m
+[32m+[m[32m   * 1. Correct the inheritance and scaling of font size in all browsers.[m
+[32m+[m[32m   * 2. Correct the odd `em` font sizing in all browsers.[m
+[32m+[m[32m   */[m
+[32m+[m[32m  code,[m
+[32m+[m[32m  kbd,[m
+[32m+[m[32m  samp {[m
+[32m+[m[32m    font-family: monospace, monospace;[m
+[32m+[m[32m    /* 1 */[m
+[32m+[m[32m    font-size: 1em;[m
+[32m+[m[32m    /* 2 */[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  /**[m
+[32m+[m[32m   * Add the correct font style in Android 4.3-.[m
+[32m+[m[32m   */[m
+[32m+[m[32m  dfn {[m
+[32m+[m[32m    font-style: italic;[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  /**[m
+[32m+[m[32m   * Add the correct background and color in IE 9-.[m
+[32m+[m[32m   */[m
+[32m+[m[32m  mark {[m
+[32m+[m[32m    background-color: #ff0;[m
+[32m+[m[32m    color: #000;[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  /**[m
+[32m+[m[32m   * Add the correct font size in all browsers.[m
+[32m+[m[32m   */[m
+[32m+[m[32m  small {[m
+[32m+[m[32m    font-size: 80%;[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  /**[m
+[32m+[m[32m   * Prevent `sub` and `sup` elements from affecting the line height in[m
+[32m+[m[32m   * all browsers.[m
+[32m+[m[32m   */[m
+[32m+[m[32m  sub,[m
+[32m+[m[32m  sup {[m
+[32m+[m[32m    font-size: 75%;[m
+[32m+[m[32m    line-height: 0;[m
+[32m+[m[32m    position: relative;[m
+[32m+[m[32m    vertical-align: baseline;[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  sub {[m
+[32m+[m[32m    bottom: -0.25em;[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  sup {[m
+[32m+[m[32m    top: -0.5em;[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  /* Embedded content[m
+[32m+[m[32m     ========================================================================== */[m
+[32m+[m[32m  /**[m
+[32m+[m[32m   * Add the correct display in IE 9-.[m
+[32m+[m[32m   */[m
+[32m+[m[32m  audio,[m
+[32m+[m[32m  video {[m
+[32m+[m[32m    display: inline-block;[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  /**[m
+[32m+[m[32m   * Add the correct display in iOS 4-7.[m
+[32m+[m[32m   */[m
+[32m+[m[32m  audio:not([controls]) {[m
+[32m+[m[32m    display: none;[m
+[32m+[m[32m    height: 0;[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  /**[m
+[32m+[m[32m   * Remove the border on images inside links in IE 10-.[m
+[32m+[m[32m   */[m
+[32m+[m[32m  img {[m
+[32m+[m[32m    border-style: none;[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  /**[m
+[32m+[m[32m   * Hide the overflow in IE.[m
+[32m+[m[32m   */[m
+[32m+[m[32m  svg:not(:root) {[m
+[32m+[m[32m    overflow: hidden;[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  /* Forms[m
+[32m+[m[32m     ========================================================================== */[m
+[32m+[m[32m  /**[m
+[32m+[m[32m   * 1. Change the font styles in all browsers (opinionated).[m
+[32m+[m[32m   * 2. Remove the margin in Firefox and Safari.[m
+[32m+[m[32m   */[m
+[32m+[m[32m  button,[m
+[32m+[m[32m  input,[m
+[32m+[m[32m  optgroup,[m
+[32m+[m[32m  select,[m
+[32m+[m[32m  textarea {[m
+[32m+[m[32m    font-family: sans-serif;[m
+[32m+[m[32m    /* 1 */[m
+[32m+[m[32m    font-size: 100%;[m
+[32m+[m[32m    /* 1 */[m
+[32m+[m[32m    line-height: 1.15;[m
+[32m+[m[32m    /* 1 */[m
+[32m+[m[32m    margin: 0;[m
+[32m+[m[32m    /* 2 */[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  /**[m
+[32m+[m[32m   * Show the overflow in IE.[m
+[32m+[m[32m   * 1. Show the overflow in Edge.[m
+[32m+[m[32m   */[m
+[32m+[m[32m  button,[m
+[32m+[m[32m  input {[m
+[32m+[m[32m    /* 1 */[m
+[32m+[m[32m    overflow: visible;[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  /**[m
+[32m+[m[32m   * Remove the inheritance of text transform in Edge, Firefox, and IE.[m
+[32m+[m[32m   * 1. Remove the inheritance of text transform in Firefox.[m
+[32m+[m[32m   */[m
+[32m+[m[32m  button,[m
+[32m+[m[32m  select {[m
+[32m+[m[32m    /* 1 */[m
+[32m+[m[32m    text-transform: none;[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  /**[m
+[32m+[m[32m   * 1. Prevent a WebKit bug where (2) destroys native `audio` and `video`[m
+[32m+[m[32m   *    controls in Android 4.[m
+[32m+[m[32m   * 2. Correct the inability to style clickable types in iOS and Safari.[m
+[32m+[m[32m   */[m
+[32m+[m[32m  button,[m
+[32m+[m[32m  html [type="button"],[m
+[32m+[m[32m  [type="reset"],[m
+[32m+[m[32m  [type="submit"] {[m
+[32m+[m[32m    -webkit-appearance: button;[m
+[32m+[m[32m    /* 2 */[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  /**[m
+[32m+[m[32m   * Remove the inner border and padding in Firefox.[m
+[32m+[m[32m   */[m
+[32m+[m[32m  button::-moz-focus-inner,[m
+[32m+[m[32m  [type="button"]::-moz-focus-inner,[m
+[32m+[m[32m  [type="reset"]::-moz-focus-inner,[m
+[32m+[m[32m  [type="submit"]::-moz-focus-inner {[m
+[32m+[m[32m    border-style: none;[m
+[32m+[m[32m    padding: 0;[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  /**[m
+[32m+[m[32m   * Restore the focus styles unset by the previous rule.[m
+[32m+[m[32m   */[m
+[32m+[m[32m  button:-moz-focusring,[m
+[32m+[m[32m  [type="button"]:-moz-focusring,[m
+[32m+[m[32m  [type="reset"]:-moz-focusring,[m
+[32m+[m[32m  [type="submit"]:-moz-focusring {[m
+[32m+[m[32m    outline: 1px dotted ButtonText;[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  /**[m
+[32m+[m[32m   * Correct the padding in Firefox.[m
+[32m+[m[32m   */[m
+[32m+[m[32m  fieldset {[m
+[32m+[m[32m    padding: 0.35em 0.75em 0.625em;[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  /**[m
+[32m+[m[32m   * 1. Correct the text wrapping in Edge and IE.[m
+[32m+[m[32m   * 2. Correct the color inheritance from `fieldset` elements in IE.[m
+[32m+[m[32m   * 3. Remove the padding so developers are not caught out when they zero out[m
+[32m+[m[32m   *    `fieldset` elements in all browsers.[m
+[32m+[m[32m   */[m
+[32m+[m[32m  legend {[m
+[32m+[m[32m    box-sizing: border-box;[m
+[32m+[m[32m    /* 1 */[m
+[32m+[m[32m    color: inherit;[m
+[32m+[m[32m    /* 2 */[m
+[32m+[m[32m    display: table;[m
+[32m+[m[32m    /* 1 */[m
+[32m+[m[32m    max-width: 100%;[m
+[32m+[m[32m    /* 1 */[m
+[32m+[m[32m    padding: 0;[m
+[32m+[m[32m    /* 3 */[m
+[32m+[m[32m    white-space: normal;[m
+[32m+[m[32m    /* 1 */[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  /**[m
+[32m+[m[32m   * 1. Add the correct display in IE 9-.[m
+[32m+[m[32m   * 2. Add the correct vertical alignment in Chrome, Firefox, and Opera.[m
+[32m+[m[32m   */[m
+[32m+[m[32m  progress {[m
+[32m+[m[32m    display: inline-block;[m
+[32m+[m[32m    /* 1 */[m
+[32m+[m[32m    vertical-align: baseline;[m
+[32m+[m[32m    /* 2 */[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  /**[m
+[32m+[m[32m   * Remove the default vertical scrollbar in IE.[m
+[32m+[m[32m   */[m
+[32m+[m[32m  textarea {[m
+[32m+[m[32m    overflow: auto;[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  /**[m
+[32m+[m[32m   * 1. Add the correct box sizing in IE 10-.[m
+[32m+[m[32m   * 2. Remove the padding in IE 10-.[m
+[32m+[m[32m   */[m
+[32m+[m[32m  [type="checkbox"],[m
+[32m+[m[32m  [type="radio"] {[m
+[32m+[m[32m    box-sizing: border-box;[m
+[32m+[m[32m    /* 1 */[m
+[32m+[m[32m    padding: 0;[m
+[32m+[m[32m    /* 2 */[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  /**[m
+[32m+[m[32m   * Correct the cursor style of increment and decrement buttons in Chrome.[m
+[32m+[m[32m   */[m
+[32m+[m[32m  [type="number"]::-webkit-inner-spin-button,[m
+[32m+[m[32m  [type="number"]::-webkit-outer-spin-button {[m
+[32m+[m[32m    height: auto;[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  /**[m
+[32m+[m[32m   * 1. Correct the odd appearance in Chrome and Safari.[m
+[32m+[m[32m   * 2. Correct the outline style in Safari.[m
+[32m+[m[32m   */[m
+[32m+[m[32m  [type="search"] {[m
+[32m+[m[32m    -webkit-appearance: textfield;[m
+[32m+[m[32m    /* 1 */[m
+[32m+[m[32m    outline-offset: -2px;[m
+[32m+[m[32m    /* 2 */[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  /**[m
+[32m+[m[32m   * Remove the inner padding and cancel buttons in Chrome and Safari on macOS.[m
+[32m+[m[32m   */[m
+[32m+[m[32m  [type="search"]::-webkit-search-cancel-button,[m
+[32m+[m[32m  [type="search"]::-webkit-search-decoration {[m
+[32m+[m[32m    -webkit-appearance: none;[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  /**[m
+[32m+[m[32m   * 1. Correct the inability to style clickable types in iOS and Safari.[m
+[32m+[m[32m   * 2. Change font properties to `inherit` in Safari.[m
+[32m+[m[32m   */[m
+[32m+[m[32m  ::-webkit-file-upload-button {[m
+[32m+[m[32m    -webkit-appearance: button;[m
+[32m+[m[32m    /* 1 */[m
+[32m+[m[32m    font: inherit;[m
+[32m+[m[32m    /* 2 */[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  /* Interactive[m
+[32m+[m[32m     ========================================================================== */[m
+[32m+[m[32m  /*[m
+[32m+[m[32m   * Add the correct display in IE 9-.[m
+[32m+[m[32m   * 1. Add the correct display in Edge, IE, and Firefox.[m
+[32m+[m[32m   */[m
+[32m+[m[32m  details,[m
+[32m+[m[32m  menu {[m
+[32m+[m[32m    display: block;[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  /*[m
+[32m+[m[32m   * Add the correct display in all browsers.[m
+[32m+[m[32m   */[m
+[32m+[m[32m  summary {[m
+[32m+[m[32m    display: list-item;[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  /* Scripting[m
+[32m+[m[32m     ========================================================================== */[m
+[32m+[m[32m  /**[m
+[32m+[m[32m   * Add the correct display in IE 9-.[m
+[32m+[m[32m   */[m
+[32m+[m[32m  canvas {[m
+[32m+[m[32m    display: inline-block;[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  /**[m
+[32m+[m[32m   * Add the correct display in IE.[m
+[32m+[m[32m   */[m
+[32m+[m[32m  template {[m
+[32m+[m[32m    display: none;[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  /* Hidden[m
+[32m+[m[32m     ========================================================================== */[m
+[32m+[m[32m  /**[m
+[32m+[m[32m   * Add the correct display in IE 10-.[m
+[32m+[m[32m   */[m
+[32m+[m[32m  [hidden] {[m
+[32m+[m[32m    display: none;[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  html {[m
+[32m+[m[32m    height: 100%;[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  fieldset {[m
+[32m+[m[32m    margin: 0;[m
+[32m+[m[32m    padding: 0;[m
+[32m+[m[32m    -webkit-margin-start: 0;[m
+[32m+[m[32m    -webkit-margin-end: 0;[m
+[32m+[m[32m    -webkit-padding-before: 0;[m
+[32m+[m[32m    -webkit-padding-start: 0;[m
+[32m+[m[32m    -webkit-padding-end: 0;[m
+[32m+[m[32m    -webkit-padding-after: 0;[m
+[32m+[m[32m    border: 0;[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  legend {[m
+[32m+[m[32m    margin: 0;[m
+[32m+[m[32m    padding: 0;[m
+[32m+[m[32m    display: block;[m
+[32m+[m[32m    -webkit-padding-start: 0;[m
+[32m+[m[32m    -webkit-padding-end: 0;[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  /*===============================[m
+[32m+[m[32m  =            Choices            =[m
+[32m+[m[32m  ===============================*/[m
+[32m+[m[32m  .choices {[m
+[32m+[m[32m    position: relative;[m
+[32m+[m[32m    margin-bottom: 24px;[m
+[32m+[m[32m    font-size: 16px;[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  .choices:focus {[m
+[32m+[m[32m    outline: none;[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  .choices:last-child {[m
+[32m+[m[32m    margin-bottom: 0;[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  .choices.is-disabled .choices__inner, .choices.is-disabled .choices__input {[m
+[32m+[m[32m    background-color: #EAEAEA;[m
+[32m+[m[32m    cursor: not-allowed;[m
+[32m+[m[32m    -webkit-user-select: none;[m
+[32m+[m[32m       -moz-user-select: none;[m
+[32m+[m[32m        -ms-user-select: none;[m
+[32m+[m[32m            user-select: none;[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  .choices.is-disabled .choices__item {[m
+[32m+[m[32m    cursor: not-allowed;[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  .choices[data-type*="select-one"] {[m
+[32m+[m[32m    cursor: pointer;[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  .choices[data-type*="select-one"] .choices__inner {[m
+[32m+[m[32m    padding-bottom: 7.5px;[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  .choices[data-type*="select-one"] .choices__input {[m
+[32m+[m[32m    display: block;[m
+[32m+[m[32m    width: 100%;[m
+[32m+[m[32m    padding: 10px;[m
+[32m+[m[32m    border-bottom: 1px solid #DDDDDD;[m
+[32m+[m[32m    background-color: #FFFFFF;[m
+[32m+[m[32m    margin: 0;[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  .choices[data-type*="select-one"] .choices__button {[m
+[32m+[m[32m    background-image: url("../../icons/cross-inverse.svg");[m
+[32m+[m[32m    padding: 0;[m
+[32m+[m[32m    background-size: 8px;[m
+[32m+[m[32m    height: 100%;[m
+[32m+[m[32m    position: absolute;[m
+[32m+[m[32m    top: 50%;[m
+[32m+[m[32m    right: 0;[m
+[32m+[m[32m    margin-top: -10px;[m
+[32m+[m[32m    margin-right: 25px;[m
+[32m+[m[32m    height: 20px;[m
+[32m+[m[32m    width: 20px;[m
+[32m+[m[32m    border-radius: 10em;[m
+[32m+[m[32m    opacity: .5;[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  .choices[data-type*="select-one"] .choices__button:hover, .choices[data-type*="select-one"] .choices__button:focus {[m
+[32m+[m[32m    opacity: 1;[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  .choices[data-type*="select-one"] .choices__button:focus {[m
+[32m+[m[32m    box-shadow: 0px 0px 0px 2px #00BCD4;[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  .choices[data-type*="select-one"]:after {[m
+[32m+[m[32m    content: "";[m
+[32m+[m[32m    height: 0;[m
+[32m+[m[32m    width: 0;[m
+[32m+[m[32m    border-style: solid;[m
+[32m+[m[32m    border-color: #333333 transparent transparent transparent;[m
+[32m+[m[32m    border-width: 5px;[m
+[32m+[m[32m    position: absolute;[m
+[32m+[m[32m    right: 11.5px;[m
+[32m+[m[32m    top: 50%;[m
+[32m+[m[32m    margin-top: -2.5px;[m
+[32m+[m[32m    pointer-events: none;[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  .choices[data-type*="select-one"].is-open:after {[m
+[32m+[m[32m    border-color: transparent transparent #333333 transparent;[m
+[32m+[m[32m    margin-top: -7.5px;[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  .choices[data-type*="select-one"][dir="rtl"]:after {[m
+[32m+[m[32m    left: 11.5px;[m
+[32m+[m[32m    right: auto;[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  .choices[data-type*="select-one"][dir="rtl"] .choices__button {[m
+[32m+[m[32m    right: auto;[m
+[32m+[m[32m    left: 0;[m
+[32m+[m[32m    margin-left: 25px;[m
+[32m+[m[32m    margin-right: 0;[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  .choices[data-type*="select-multiple"] .choices__inner, .choices[data-type*="text"] .choices__inner {[m
+[32m+[m[32m    cursor: text;[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  .choices[data-type*="select-multiple"] .choices__button, .choices[data-type*="text"] .choices__button {[m
+[32m+[m[32m    position: relative;[m
+[32m+[m[32m    display: inline-block;[m
+[32m+[m[32m    margin-top: 0;[m
+[32m+[m[32m    margin-right: -4px;[m
+[32m+[m[32m    margin-bottom: 0;[m
+[32m+[m[32m    margin-left: 8px;[m
+[32m+[m[32m    padding-left: 16px;[m
+[32m+[m[32m    border-left: 1px solid #008fa1;[m
+[32m+[m[32m    background-image: url("../../icons/cross.svg");[m
+[32m+[m[32m    background-size: 8px;[m
+[32m+[m[32m    width: 8px;[m
+[32m+[m[32m    line-height: 1;[m
+[32m+[m[32m    opacity: .75;[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  .choices[data-type*="select-multiple"] .choices__button:hover, .choices[data-type*="select-multiple"] .choices__button:focus, .choices[data-type*="text"] .choices__button:hover, .choices[data-type*="text"] .choices__button:focus {[m
+[32m+[m[32m    opacity: 1;[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  .choices__inner {[m
+[32m+[m[32m    display: inline-block;[m
+[32m+[m[32m    vertical-align: top;[m
+[32m+[m[32m    width: 100%;[m
+[32m+[m[32m    background-color: #f9f9f9;[m
+[32m+[m[32m    padding: 7.5px 7.5px 3.75px;[m
+[32m+[m[32m    border: 1px solid #DDDDDD;[m
+[32m+[m[32m    border-radius: 2.5px;[m
+[32m+[m[32m    font-size: 14px;[m
+[32m+[m[32m    min-height: 44px;[m
+[32m+[m[32m    overflow: hidden;[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  .is-focused .choices__inner, .is-open .choices__inner {[m
+[32m+[m[32m    border-color: #b7b7b7;[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  .is-open .choices__inner {[m
+[32m+[m[32m    border-radius: 2.5px 2.5px 0 0;[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  .is-flipped.is-open .choices__inner {[m
+[32m+[m[32m    border-radius: 0 0 2.5px 2.5px;[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  .choices__list {[m
+[32m+[m[32m    margin: 0;[m
+[32m+[m[32m    padding-left: 0;[m
+[32m+[m[32m    list-style: none;[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  .choices__list--single {[m
+[32m+[m[32m    display: inline-block;[m
+[32m+[m[32m    padding: 4px 16px 4px 4px;[m
+[32m+[m[32m    width: 100%;[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  [dir="rtl"] .choices__list--single {[m
+[32m+[m[32m    padding-right: 4px;[m
+[32m+[m[32m    padding-left: 16px;[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  .choices__list--single .choices__item {[m
+[32m+[m[32m    width: 100%;[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  .choices__list--multiple {[m
+[32m+[m[32m    display: inline;[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  .choices__list--multiple .choices__item {[m
+[32m+[m[32m    display: inline-block;[m
+[32m+[m[32m    vertical-align: middle;[m
+[32m+[m[32m    border-radius: 20px;[m
+[32m+[m[32m    padding: 4px 10px;[m
+[32m+[m[32m    font-size: 12px;[m
+[32m+[m[32m    font-weight: 500;[m
+[32m+[m[32m    margin-right: 3.75px;[m
+[32m+[m[32m    margin-bottom: 3.75px;[m
+[32m+[m[32m    background-color: #00BCD4;[m
+[32m+[m[32m    border: 1px solid #00a5bb;[m
+[32m+[m[32m    color: #FFFFFF;[m
+[32m+[m[32m    word-break: break-all;[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  .choices__list--multiple .choices__item[data-deletable] {[m
+[32m+[m[32m    padding-right: 5px;[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  [dir="rtl"] .choices__list--multiple .choices__item {[m
+[32m+[m[32m    margin-right: 0;[m
+[32m+[m[32m    margin-left: 3.75px;[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  .choices__list--multiple .choices__item.is-highlighted {[m
+[32m+[m[32m    background-color: #00a5bb;[m
+[32m+[m[32m    border: 1px solid #008fa1;[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  .is-disabled .choices__list--multiple .choices__item {[m
+[32m+[m[32m    background-color: #aaaaaa;[m
+[32m+[m[32m    border: 1px solid #919191;[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  .choices__list--dropdown {[m
+[32m+[m[32m    display: none;[m
+[32m+[m[32m    z-index: 1;[m
+[32m+[m[32m    position: absolute;[m
+[32m+[m[32m    width: 100%;[m
+[32m+[m[32m    background-color: #FFFFFF;[m
+[32m+[m[32m    border: 1px solid #DDDDDD;[m
+[32m+[m[32m    top: 100%;[m
+[32m+[m[32m    margin-top: -1px;[m
+[32m+[m[32m    border-bottom-left-radius: 2.5px;[m
+[32m+[m[32m    border-bottom-right-radius: 2.5px;[m
+[32m+[m[32m    overflow: hidden;[m
+[32m+[m[32m    word-break: break-all;[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  .choices__list--dropdown.is-active {[m
+[32m+[m[32m    display: block;[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  .is-open .choices__list--dropdown {[m
+[32m+[m[32m    border-color: #b7b7b7;[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  .is-flipped .choices__list--dropdown {[m
+[32m+[m[32m    top: auto;[m
+[32m+[m[32m    bottom: 100%;[m
+[32m+[m[32m    margin-top: 0;[m
+[32m+[m[32m    margin-bottom: -1px;[m
+[32m+[m[32m    border-radius: .25rem .25rem 0 0;[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  .choices__list--dropdown .choices__list {[m
+[32m+[m[32m    position: relative;[m
+[32m+[m[32m    max-height: 300px;[m
+[32m+[m[32m    overflow: auto;[m
+[32m+[m[32m    -webkit-overflow-scrolling: touch;[m
+[32m+[m[32m    will-change: scroll-position;[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  .choices__list--dropdown .choices__item {[m
+[32m+[m[32m    position: relative;[m
+[32m+[m[32m    padding: 10px;[m
+[32m+[m[32m    font-size: 14px;[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  [dir="rtl"] .choices__list--dropdown .choices__item {[m
+[32m+[m[32m    text-align: right;[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  @media (min-width: 640px) {[m
+[32m+[m[32m    .choices__list--dropdown .choices__item--selectable {[m
+[32m+[m[32m      padding-right: 100px;[m
+[32m+[m[32m    }[m
+[32m+[m[32m    .choices__list--dropdown .choices__item--selectable:after {[m
+[32m+[m[32m      content: attr(data-select-text);[m
+[32m+[m[32m      font-size: 12px;[m
+[32m+[m[32m      opacity: 0;[m
+[32m+[m[32m      position: absolute;[m
+[32m+[m[32m      right: 10px;[m
+[32m+[m[32m      top: 50%;[m
+[32m+[m[32m      transform: translateY(-50%);[m
+[32m+[m[32m    }[m
+[32m+[m[32m    [dir="rtl"] .choices__list--dropdown .choices__item--selectable {[m
+[32m+[m[32m      text-align: right;[m
+[32m+[m[32m      padding-left: 100px;[m
+[32m+[m[32m      padding-right: 10px;[m
+[32m+[m[32m    }[m
+[32m+[m[32m    [dir="rtl"] .choices__list--dropdown .choices__item--selectable:after {[m
+[32m+[m[32m      right: auto;[m
+[32m+[m[32m      left: 10px;[m
+[32m+[m[32m    }[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  .choices__list--dropdown .choices__item--selectable.is-highlighted {[m
+[32m+[m[32m    background-color: #f2f2f2;[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  .choices__list--dropdown .choices__item--selectable.is-highlighted:after {[m
+[32m+[m[32m    opacity: .5;[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  .choices__item {[m
+[32m+[m[32m    cursor: default;[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  .choices__item--selectable {[m
+[32m+[m[32m    cursor: pointer;[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  .choices__item--disabled {[m
+[32m+[m[32m    cursor: not-allowed;[m
+[32m+[m[32m    -webkit-user-select: none;[m
+[32m+[m[32m       -moz-user-select: none;[m
+[32m+[m[32m        -ms-user-select: none;[m
+[32m+[m[32m            user-select: none;[m
+[32m+[m[32m    opacity: .5;[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  .choices__heading {[m
+[32m+[m[32m    font-weight: 600;[m
+[32m+[m[32m    font-size: 12px;[m
+[32m+[m[32m    padding: 10px;[m
+[32m+[m[32m    border-bottom: 1px solid #f7f7f7;[m
+[32m+[m[32m    color: gray;[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  .choices__button {[m
+[32m+[m[32m    text-indent: -9999px;[m
+[32m+[m[32m    -webkit-appearance: none;[m
+[32m+[m[32m    -moz-appearance: none;[m
+[32m+[m[32m         appearance: none;[m
+[32m+[m[32m    border: 0;[m
+[32m+[m[32m    background-color: transparent;[m
+[32m+[m[32m    background-repeat: no-repeat;[m
+[32m+[m[32m    background-position: center;[m
+[32m+[m[32m    cursor: pointer;[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  .choices__button:focus {[m
+[32m+[m[32m    outline: none;[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  .choices__input {[m
+[32m+[m[32m    display: inline-block;[m
+[32m+[m[32m    vertical-align: baseline;[m
+[32m+[m[32m    background-color: #f9f9f9;[m
+[32m+[m[32m    font-size: 14px;[m
+[32m+[m[32m    margin-bottom: 5px;[m
+[32m+[m[32m    border: 0;[m
+[32m+[m[32m    border-radius: 0;[m
+[32m+[m[32m    max-width: 100%;[m
+[32m+[m[32m    padding: 4px 0 4px 2px;[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  .choices__input:focus {[m
+[32m+[m[32m    outline: 0;[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  [dir="rtl"] .choices__input {[m
+[32m+[m[32m    padding-right: 2px;[m
+[32m+[m[32m    padding-left: 0;[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  .choices__placeholder {[m
+[32m+[m[32m    opacity: .5;[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  /*=====  End of Choices  ======*/[m
+[32m+[m[32m  * {[m
+[32m+[m[32m    box-sizing: border-box;[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  .s007 {[m
+[32m+[m[32m    min-height: 100vh;[m
+[32m+[m[32m    display: -ms-flexbox;[m
+[32m+[m[32m    display: flex;[m
+[32m+[m[32m    -ms-flex-pack: center;[m
+[32m+[m[32m        justify-content: center;[m
+[32m+[m[32m    -ms-flex-align: center;[m
+[32m+[m[32m        align-items: center;[m
+[32m+[m[32m    background: #00b5e9;[m
+[32m+[m[32m    padding: 15px;[m
+[32m+[m[32m    font-family: 'Roboto', sans-serif;[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  .s007 form {[m
+[32m+[m[32m    width: 100%;[m
+[32m+[m[32m    max-width: 790px;[m
+[32m+[m[32m    margin: 0;[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  .s007 form .inner-form {[m
+[32m+[m[32m    width: 100%;[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  .s007 form .inner-form .input-field {[m
+[32m+[m[32m    position: relative;[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  .s007 form .inner-form .input-field input {[m
+[32m+[m[32m    height: 100%;[m
+[32m+[m[32m    border: 0;[m
+[32m+[m[32m    background: #fff;[m
+[32m+[m[32m    display: block;[m
+[32m+[m[32m    width: 100%;[m
+[32m+[m[32m    padding: 10px 32px 10px 70px;[m
+[32m+[m[32m    font-size: 18px;[m
+[32m+[m[32m    color: #666;[m
+[32m+[m[32m    border-radius: 3px;[m
+[32m+[m[32m    height: 70px;[m
+[32m+[m[32m    color: #555;[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  .s007 form .inner-form .input-field input.placeholder {[m
+[32m+[m[32m    color: #999;[m
+[32m+[m[32m    font-size: 18px;[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  .s007 form .inner-form .input-field input:-moz-placeholder {[m
+[32m+[m[32m    color: #999;[m
+[32m+[m[32m    font-size: 18px;[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  .s007 form .inner-form .input-field input::-webkit-input-placeholder {[m
+[32m+[m[32m    color: #999;[m
+[32m+[m[32m    font-size: 18px;[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  .s007 form .inner-form .input-field input:hover, .s007 form .inner-form .input-field input:focus {[m
+[32m+[m[32m    box-shadow: none;[m
+[32m+[m[32m    outline: 0;[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  .s007 form .inner-form .input-field .btn-search {[m
+[32m+[m[32m    min-width: 100px;[m
+[32m+[m[32m    height: 40px;[m
+[32m+[m[32m    padding: 0 15px;[m
+[32m+[m[32m    background: #57b846;[m
+[32m+[m[32m    white-space: nowrap;[m
+[32m+[m[32m    border-radius: 3px;[m
+[32m+[m[32m    font-size: 14px;[m
+[32m+[m[32m    color: #fff;[m
+[32m+[m[32m    transition: all .2s ease-out, color .2s ease-out;[m
+[32m+[m[32m    border: 0;[m
+[32m+[m[32m    cursor: pointer;[m
+[32m+[m[32m    font-weight: bold;[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  .s007 form .inner-form .input-field .btn-search:hover {[m
+[32m+[m[32m    background: #4ea63f;[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  .s007 form .inner-form .input-field .btn-delete {[m
+[32m+[m[32m    min-width: 100px;[m
+[32m+[m[32m    height: 40px;[m
+[32m+[m[32m    padding: 0 15px;[m
+[32m+[m[32m    background: transparent;[m
+[32m+[m[32m    white-space: nowrap;[m
+[32m+[m[32m    border-radius: 3px;[m
+[32m+[m[32m    font-size: 14px;[m
+[32m+[m[32m    color: #555;[m
+[32m+[m[32m    transition: all .2s ease-out, color .2s ease-out;[m
+[32m+[m[32m    border: 0;[m
+[32m+[m[32m    cursor: pointer;[m
+[32m+[m[32m    font-weight: bold;[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  .s007 form .inner-form .input-field .btn-delete:hover {[m
+[32m+[m[32m    color: #000;[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  .s007 form .inner-form .basic-search {[m
+[32m+[m[32m    margin-bottom: 5px;[m
+[32m+[m[32m    box-shadow: 0px 8px 20px 0px rgba(0, 0, 0, 0.15);[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  .s007 form .inner-form .basic-search .input-field {[m
+[32m+[m[32m    width: 100%;[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  .s007 form .inner-form .basic-search .input-field input {[m
+[32m+[m[32m    padding: 10px 110px 10px 70px;[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  .s007 form .inner-form .basic-search .input-field .icon-wrap {[m
+[32m+[m[32m    position: absolute;[m
+[32m+[m[32m    top: 0;[m
+[32m+[m[32m    left: 0;[m
+[32m+[m[32m    display: -ms-flexbox;[m
+[32m+[m[32m    display: flex;[m
+[32m+[m[32m    -ms-flex-pack: end;[m
+[32m+[m[32m        justify-content: flex-end;[m
+[32m+[m[32m    -ms-flex-align: center;[m
+[32m+[m[32m        align-items: center;[m
+[32m+[m[32m    width: 60px;[m
+[32m+[m[32m    height: 100%;[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  .s007 form .inner-form .basic-search .input-field .icon-wrap svg {[m
+[32m+[m[32m    width: 34px;[m
+[32m+[m[32m    height: 34px;[m
+[32m+[m[32m    fill: #ccc;[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  .s007 form .inner-form .basic-search .input-field .result-count {[m
+[32m+[m[32m    display: -ms-flexbox;[m
+[32m+[m[32m    display: flex;[m
+[32m+[m[32m    -ms-flex-pack: start;[m
+[32m+[m[32m        justify-content: flex-start;[m
+[32m+[m[32m    -ms-flex-align: center;[m
+[32m+[m[32m        align-items: center;[m
+[32m+[m[32m    width: 110px;[m
+[32m+[m[32m    top: 0;[m
+[32m+[m[32m    right: 0;[m
+[32m+[m[32m    position: absolute;[m
+[32m+[m[32m    font-weight: bold;[m
+[32m+[m[32m    color: #555;[m
+[32m+[m[32m    height: 100%;[m
+[32m+[m[32m    font-size: 14px;[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  .s007 form .inner-form .basic-search .input-field .result-count span {[m
+[32m+[m[32m    color: #57b846;[m
+[32m+[m[32m    padding-right: 5px;[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  .s007 form .inner-form .advance-search {[m
+[32m+[m[32m    background: #fff;[m
+[32m+[m[32m    padding: 40px;[m
+[32m+[m[32m    border-radius: 3px;[m
+[32m+[m[32m    box-shadow: 0px 8px 20px 0px rgba(0, 0, 0, 0.15);[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  .s007 form .inner-form .advance-search .desc {[m
+[32m+[m[32m    font-size: 15px;[m
+[32m+[m[32m    color: #999;[m
+[32m+[m[32m    display: block;[m
+[32m+[m[32m    margin-bottom: 26px;[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  .s007 form .inner-form .advance-search .row {[m
+[32m+[m[32m    display: -ms-flexbox;[m
+[32m+[m[32m    display: flex;[m
+[32m+[m[32m    -ms-flex-pack: justify;[m
+[32m+[m[32m        justify-content: space-between;[m
+[32m+[m[32m    -ms-flex-align: center;[m
+[32m+[m[32m        align-items: center;[m
+[32m+[m[32m    margin-bottom: 20px;[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  .s007 form .inner-form .advance-search .row.second {[m
+[32m+[m[32m    margin-bottom: 46px;[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  .s007 form .inner-form .advance-search .row.third {[m
+[32m+[m[32m    margin-bottom: 0;[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  .s007 form .inner-form .advance-search .input-field {[m
+[32m+[m[32m    width: calc(33.3333% - 30px);[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  .s007 form .inner-form .advance-search .input-select {[m
+[32m+[m[32m    height: 40px;[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  .s007 form .inner-form .advance-search .choices__inner {[m
+[32m+[m[32m    background: transparent;[m
+[32m+[m[32m    border-radius: 0;[m
+[32m+[m[32m    border: 0;[m
+[32m+[m[32m    border-bottom: 2px solid #ccc;[m
+[32m+[m[32m    height: 100%;[m
+[32m+[m[32m    color: #fff;[m
+[32m+[m[32m    display: -ms-flexbox;[m
+[32m+[m[32m    display: flex;[m
+[32m+[m[32m    -ms-flex-align: center;[m
+[32m+[m[32m        align-items: center;[m
+[32m+[m[32m    padding: 0;[m
+[32m+[m[32m    padding-right: 30px;[m
+[32m+[m[32m    font-size: 14px;[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  .s007 form .inner-form .advance-search .choices__inner .choices__list.choices__list--single {[m
+[32m+[m[32m    display: -ms-flexbox;[m
+[32m+[m[32m    display: flex;[m
+[32m+[m[32m    padding: 0;[m
+[32m+[m[32m    -ms-flex-align: center;[m
+[32m+[m[32m        align-items: center;[m
+[32m+[m[32m    height: 100%;[m
+[32m+[m[32m    padding-top: 10px;[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  .s007 form .inner-form .advance-search .choices__inner .choices__item.choices__item--selectable.choices__placeholder {[m
+[32m+[m[32m    display: -ms-flexbox;[m
+[32m+[m[32m    display: flex;[m
+[32m+[m[32m    -ms-flex-align: center;[m
+[32m+[m[32m        align-items: center;[m
+[32m+[m[32m    height: 100%;[m
+[32m+[m[32m    opacity: 1;[m
+[32m+[m[32m    color: #888;[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  .s007 form .inner-form .advance-search .choices__inner .choices__list--single .choices__item {[m
+[32m+[m[32m    display: -ms-flexbox;[m
+[32m+[m[32m    display: flex;[m
+[32m+[m[32m    -ms-flex-align: center;[m
+[32m+[m[32m        align-items: center;[m
+[32m+[m[32m    height: 100%;[m
+[32m+[m[32m    color: #555;[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  .s007 form .inner-form .advance-search .choices__list.choices__list--dropdown {[m
+[32m+[m[32m    border: 0;[m
+[32m+[m[32m    background: #fff;[m
+[32m+[m[32m    padding: 20px 30px;[m
+[32m+[m[32m    margin-top: 2px;[m
+[32m+[m[32m    border-radius: 4px;[m
+[32m+[m[32m    box-shadow: 0px 8px 20px 0px rgba(0, 0, 0, 0.15);[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  .s007 form .inner-form .advance-search .choices__list.choices__list--dropdown .choices__item--selectable {[m
+[32m+[m[32m    padding-right: 0;[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  .s007 form .inner-form .advance-search .choices__list--dropdown .choices__item--selectable.is-highlighted {[m
+[32m+[m[32m    background: #fff;[m
+[32m+[m[32m    color: #57b846;[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  .s007 form .inner-form .advance-search .choices__list--dropdown .choices__item {[m
+[32m+[m[32m    color: #555;[m
+[32m+[m[32m    min-height: 24px;[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  .s007 form .inner-form .advance-search .choices[data-type*="select-one"]:after {[m
+[32m+[m[32m    border: 0;[m
+[32m+[m[32m    width: 32px;[m
+[32m+[m[32m    height: 32px;[m
+[32m+[m[32m    margin: 0;[m
+[32m+[m[32m    transform: none;[m
+[32m+[m[32m    opacity: 1;[m
+[32m+[m[32m    right: 0;[m
+[32m+[m[32m    top: 10px;[m
+[32m+[m[32m    background-size: 18px 18px;[m
+[32m+[m[32m    background-position: right center;[m
+[32m+[m[32m    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg fill='%23999' xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3e%3cpath d='M16.59 8.59L12 13.17 7.41 8.59 6 10l6 6 6-6z'/%3e%3c/svg%3e");[m
+[32m+[m[32m    background-repeat: no-repeat;[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  .s007 form .inner-form .advance-search .choices[data-type*="select-one"] .choices__button {[m
+[32m+[m[32m    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg fill='%2357b846' xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3e%3cpath d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z'/%3e%3c/svg%3e");[m
+[32m+[m[32m    background-size: 16px 16px;[m
+[32m+[m[32m    background-position: right center;[m
+[32m+[m[32m    width: 32px;[m
+[32m+[m[32m    height: 32px;[m
+[32m+[m[32m    opacity: 1;[m
+[32m+[m[32m    display: none;[m
+[32m+[m[32m    top: 10px;[m
+[32m+[m[32m    right: 0;[m
+[32m+[m[32m    transform: none;[m
+[32m+[m[32m    margin: 0;[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  .s007 form .inner-form .advance-search .choices[data-type*="select-one"].valid .choices__button {[m
+[32m+[m[32m    display: block;[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  .s007 form .inner-form .advance-search .choices[data-type*="select-one"].valid .choices__button:hover {[m
+[32m+[m[32m    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg fill='%23ccc' xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3e%3cpath d='M12 2C6.47 2 2 6.47 2 12s4.47 10 10 10 10-4.47 10-10S17.53 2 12 2zm5 13.59L15.59 17 12 13.41 8.41 17 7 15.59 10.59 12 7 8.41 8.41 7 12 10.59 15.59 7 17 8.41 13.41 12 17 15.59z'/%3e%3c/svg%3e");[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  .s007 form .inner-form .advance-search .choices[data-type*="select-one"].valid:after {[m
+[32m+[m[32m    display: none;[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  .s007 form .inner-form .advance-search .choices[data-type*="select-one"].is-open:after {[m
+[32m+[m[32m    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg fill='%23999' xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3e%3cpath d='M12 8l-6 6 1.41 1.41L12 10.83l4.59 4.58L18 14z'/%3e%3c/svg%3e");[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+[32m+[m[32m  @media screen and (max-width: 767px) {[m
+[32m+[m[32m    .s007 form .inner-form .basic-search .input-field input {[m
+[32m+[m[32m      padding: 10px 110px 10px 60px;[m
+[32m+[m[32m    }[m
+[32m+[m[32m    .s007 form .inner-form .basic-search .input-field .icon-wrap {[m
+[32m+[m[32m      width: 60px;[m
+[32m+[m[32m      -ms-flex-pack: center;[m
+[32m+[m[32m          justify-content: center;[m
+[32m+[m[32m    }[m
+[32m+[m[32m    .s007 form .inner-form .basic-search .input-field .icon-wrap svg {[m
+[32m+[m[32m      width: 26px;[m
+[32m+[m[32m      height: 26px;[m
+[32m+[m[32m    }[m
+[32m+[m[32m    .s007 form .inner-form .advance-search .row {[m
+[32m+[m[32m      display: block;[m
+[32m+[m[32m    }[m
+[32m+[m[32m    .s007 form .inner-form .advance-search .input-field {[m
+[32m+[m[32m      width: 100%;[m
+[32m+[m[32m      margin-bottom: 20px;[m
+[32m+[m[32m    }[m
+[32m+[m[32m  }[m
+[32m+[m[41m  [m
+\ No newline at end of file[m
+[1mdiff --git a/public/img/product/1611547232.jpg b/public/img/product/1611547232.jpg[m
+[1mnew file mode 100644[m
+[1mindex 0000000..ef20cb6[m
+Binary files /dev/null and b/public/img/product/1611547232.jpg differ
+[1mdiff --git a/public/img/product/1611547275.jpg b/public/img/product/1611547275.jpg[m
+[1mnew file mode 100644[m
+[1mindex 0000000..ef20cb6[m
+Binary files /dev/null and b/public/img/product/1611547275.jpg differ
+[1mdiff --git a/public/img/product/1611634104.jpg b/public/img/product/1611634104.jpg[m
+[1mnew file mode 100644[m
+[1mindex 0000000..1db97ce[m
+Binary files /dev/null and b/public/img/product/1611634104.jpg differ
+[1mdiff --git a/public/img/product/php57D2.tmp b/public/img/product/php57D2.tmp[m
+[1mnew file mode 100644[m
+[1mindex 0000000..a254ae1[m
+Binary files /dev/null and b/public/img/product/php57D2.tmp differ
+[1mdiff --git a/public/js/extention/choices.js b/public/js/extention/choices.js[m
+[1mnew file mode 100644[m
+[1mindex 0000000..5603886[m
+[1m--- /dev/null[m
+[1m+++ b/public/js/extention/choices.js[m
+[36m@@ -0,0 +1,6207 @@[m
+[32m+[m
+[32m+[m
+[32m+[m[32m/*! choices.js v3.0.4 | (c) 2018 Josh Johnson | https://github.com/jshjohnson/Choices#readme */[m[41m [m
+[32m+[m[32m(function webpackUniversalModuleDefinition(root, factory) {[m
+[32m+[m	[32mif(typeof exports === 'object' && typeof module === 'object')[m
+[32m+[m		[32mmodule.exports = factory();[m
+[32m+[m	[32melse if(typeof define === 'function' && define.amd)[m
+[32m+[m		[32mdefine([], factory);[m
+[32m+[m	[32melse if(typeof exports === 'object')[m
+[32m+[m		[32mexports["Choices"] = factory();[m
+[32m+[m	[32melse[m
+[32m+[m		[32mroot["Choices"] = factory();[m
+[32m+[m[32m})(this, function() {[m
+[32m+[m[32mreturn /******/ (function(modules) { // webpackBootstrap[m
+[32m+[m[32m/******/ 	// The module cache[m
+[32m+[m[32m/******/ 	var installedModules = {};[m
+[32m+[m
+[32m+[m[32m/******/ 	// The require function[m
+[32m+[m[32m/******/ 	function __webpack_require__(moduleId) {[m
+[32m+[m
+[32m+[m[32m/******/ 		// Check if module is in cache[m
+[32m+[m[32m/******/ 		if(installedModules[moduleId])[m
+[32m+[m[32m/******/ 			return installedModules[moduleId].exports;[m
+[32m+[m
+[32m+[m[32m/******/ 		// Create a new module (and put it into the cache)[m
+[32m+[m[32m/******/ 		var module = installedModules[moduleId] = {[m
+[32m+[m[32m/******/ 			exports: {},[m
+[32m+[m[32m/******/ 			id: moduleId,[m
+[32m+[m[32m/******/ 			loaded: false[m
+[32m+[m[32m/******/ 		};[m
+[32m+[m
+[32m+[m[32m/******/ 		// Execute the module function[m
+[32m+[m[32m/******/ 		modules[moduleId].call(module.exports, module, module.exports, __webpack_require__);[m
+[32m+[m
+[32m+[m[32m/******/ 		// Flag the module as loaded[m
+[32m+[m[32m/******/ 		module.loaded = true;[m
+[32m+[m
+[32m+[m[32m/******/ 		// Return the exports of the module[m
+[32m+[m[32m/******/ 		return module.exports;[m
+[32m+[m[32m/******/ 	}[m
+[32m+[m
+[32m+[m
+[32m+[m[32m/******/ 	// expose the modules object (__webpack_modules__)[m
+[32m+[m[32m/******/ 	__webpack_require__.m = modules;[m
+[32m+[m
+[32m+[m[32m/******/ 	// expose the module cache[m
+[32m+[m[32m/******/ 	__webpack_require__.c = installedModules;[m
+[32m+[m
+[32m+[m[32m/******/ 	// __webpack_public_path__[m
+[32m+[m[32m/******/ 	__webpack_require__.p = "/assets/scripts/dist/";[m
+[32m+[m
+[32m+[m[32m/******/ 	// Load entry module and return exports[m
+[32m+[m[32m/******/ 	return __webpack_require__(0);[m
+[32m+[m[32m/******/ })[m
+[32m+[m[32m/************************************************************************/[m
+[32m+[m[32m/******/ ([[m
+[32m+[m[32m/* 0 */[m
+[32m+[m[32m/***/ (function(module, exports, __webpack_require__) {[m
+[32m+[m
+[32m+[m	[32mmodule.exports = __webpack_require__(1);[m
+[32m+[m
+[32m+[m
+[32m+[m[32m/***/ }),[m
+[32m+[m[32m/* 1 */[m
+[32m+[m[32m/***/ (function(module, exports, __webpack_require__) {[m
+[32m+[m
+[32m+[m	[32m'use strict';[m
+[32m+[m
+[32m+[m	[32mvar _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();[m
+[32m+[m
+[32m+[m	[32mvar _fuse = __webpack_require__(2);[m
+[32m+[m
+[32m+[m	[32mvar _fuse2 = _interopRequireDefault(_fuse);[m
+[32m+[m
+[32m+[m	[32mvar _classnames = __webpack_require__(3);[m
+[32m+[m
+[32m+[m	[32mvar _classnames2 = _interopRequireDefault(_classnames);[m
+[32m+[m
+[32m+[m	[32mvar _index = __webpack_require__(4);[m
+[32m+[m
+[32m+[m	[32mvar _index2 = _interopRequireDefault(_index);[m
+[32m+[m
+[32m+[m	[32mvar _index3 = __webpack_require__(31);[m
+[32m+[m
+[32m+[m	[32mvar _utils = __webpack_require__(32);[m
+[32m+[m
+[32m+[m	[32m__webpack_require__(33);[m
+[32m+[m
+[32m+[m	[32mfunction _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }[m
+[32m+[m
+[32m+[m	[32mfunction _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }[m
+[32m+[m
+[32m+[m	[32mfunction _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }[m
+[32m+[m
+[32m+[m	[32mfunction _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }[m
+[32m+[m
+[32m+[m	[32m/**[m
+[32m+[m	[32m * Choices[m
+[32m+[m	[32m */[m
+[32m+[m	[32mvar Choices = function () {[m
+[32m+[m	[32m  function Choices() {[m
+[32m+[m	[32m    var element = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : '[data-choice]';[m
+[32m+[m	[32m    var userConfig = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};[m
+[32m+[m
+[32m+[m	[32m    _classCallCheck(this, Choices);[m
+[32m+[m
+[32m+[m	[32m    // If there are multiple elements, create a new instance[m
+[32m+[m	[32m    // for each element besides the first one (as that already has an instance)[m
+[32m+[m	[32m    if ((0, _utils.isType)('String', element)) {[m
+[32m+[m	[32m      var elements = document.querySelectorAll(element);[m
+[32m+[m	[32m      if (elements.length > 1) {[m
+[32m+[m	[32m        for (var i = 1; i < elements.length; i++) {[m
+[32m+[m	[32m          var el = elements[i];[m
+[32m+[m	[32m          new Choices(el, userConfig);[m
+[32m+[m	[32m        }[m
+[32m+[m	[32m      }[m
+[32m+[m	[32m    }[m
+[32m+[m
+[32m+[m	[32m    var defaultConfig = {[m
+[32m+[m	[32m      silent: false,[m
+[32m+[m	[32m      items: [],[m
+[32m+[m	[32m      choices: [],[m
+[32m+[m	[32m      renderChoiceLimit: -1,[m
+[32m+[m	[32m      maxItemCount: -1,[m
+[32m+[m	[32m      addItems: t
