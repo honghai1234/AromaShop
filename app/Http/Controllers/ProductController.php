@@ -6,6 +6,7 @@ use App\model\Category;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Model\Product;
+use App\model\Supplier;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use App\Model\User;
@@ -22,23 +23,56 @@ class ProductController extends Controller
      */
     public function index()
     {
-        $products = Product::where('delete_flg', '<>', 1)->get();
-        // $products = Product::where('delete_flg', '<>', 1)->get();
-        $counted = $products->countBy('color');
+        $countBy = Product::where('delete_flg', '<>', 1)->get();
+        $products = Product::where('delete_flg', '<>', 1)->paginate(6);
+        $counted = $countBy->countBy('color');
         $counted->all();
         $query = Product::distinct()->get('color');
-
-        $categorys = Category::all('name');
-        // $array = ['0'=>'Red'];
-        // return $data;s
+        $suppliers = Supplier::all('id', 'name');
+        $categorys = Category::all('name', 'id');
         return view('category', [
             'products' => $products,
             'categorys' => $categorys,
+            'suppliers' => $suppliers,
+            'querys' => $query,
+            'counted' => $counted
+        ]);
+    }
+    public function show3()
+    {
+        $countBy = Product::where('delete_flg', '<>', 1)->get();
+        $products = Product::where('delete_flg', '<>', 1)->paginate(3);
+        $counted = $countBy->countBy('color');
+        $counted->all();
+        $query = Product::distinct()->get('color');
+        $suppliers = Supplier::all('id', 'name');
+        $categorys = Category::all('name', 'id');
+        return view('category', [
+            'products' => $products,
+            'categorys' => $categorys,
+            'suppliers' => $suppliers,
             'querys' => $query,
             'counted' => $counted
         ]);
     }
 
+    public function show9()
+    {
+        $countBy = Product::where('delete_flg', '<>', 1)->get();
+        $products = Product::where('delete_flg', '<>', 1)->paginate(9);
+        $counted = $countBy->countBy('color');
+        $counted->all();
+        $query = Product::distinct()->get('color');
+        $suppliers = Supplier::all('id', 'name');
+        $categorys = Category::all('name', 'id');
+        return view('category', [
+            'products' => $products,
+            'categorys' => $categorys,
+            'suppliers' => $suppliers,
+            'querys' => $query,
+            'counted' => $counted
+        ]);
+    }
     /**
      * Store a newly created resource in storage.
      *
@@ -71,6 +105,36 @@ class ProductController extends Controller
     public function update(Request $request, $id)
     {
         //
+    }
+
+    public function searchCategory(Request $request)
+    {
+        Log::info($request);
+        $product = Product::query();
+        if ($request->name) {
+            $product->where('name', 'LIKE', '%' . $request->name . '%');
+        }
+        if ($request->category) {
+            $product->where('categorie_id', $request->category);
+        }
+        if ($request->color) {
+            $product->where('color', $request->color);
+        }
+        if ($request->supplier) {
+            $product->where('supplier_id', $request->supplier);
+        }
+        $products =  $product->get();
+        return response()->json($products);
+    }
+
+    public function searchNav(Request $request)
+    {
+        $product = Product::query();
+        if ($request->category) {
+            $product->where('categorie_id', $request->category);
+        }
+        $products =  $product->get();
+        return response()->json($products);
     }
 
     /**

@@ -618,7 +618,7 @@
         $.get('getProduct/' + id, function(products) {
             $("#idproductedit").val(products.id);
             $("#name").val(products.name);
-            // $('"#image"').val(products.image);   
+            // $('"#image"').val(products.image);
             $("#description").val(products.description);
             $("#amount").val(products.amount);
             $("#price").val(products.price);
