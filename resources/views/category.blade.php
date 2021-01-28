@@ -52,16 +52,13 @@
                             <div class="head">Brands</div>
                             <form action="#">
                                 <ul>
-                                    <li class="filter-list"><input class="pixel-radio" type="radio" id="apple"
-                                            name="brand"><label for="apple">Apple<span>(29)</span></label></li>
-                                    <li class="filter-list"><input class="pixel-radio" type="radio" id="asus"
-                                            name="brand"><label for="asus">Asus<span>(29)</span></label></li>
-                                    <li class="filter-list"><input class="pixel-radio" type="radio" id="gionee"
-                                            name="brand"><label for="gionee">Gionee<span>(19)</span></label></li>
-                                    <li class="filter-list"><input class="pixel-radio" type="radio" id="micromax"
-                                            name="brand"><label for="micromax">Micromax<span>(19)</span></label></li>
-                                    <li class="filter-list"><input class="pixel-radio" type="radio" id="samsung"
-                                            name="brand"><label for="samsung">Samsung<span>(19)</span></label></li>
+                                    @foreach ($suppliers as $item)
+                                        <li class="filter-list"><input class="radio-supplier-category" type="radio"
+                                                id="radio-supplier-category" value="{{ $item['id'] }}"
+                                                name="radio-supplier-category"><label
+                                                for="black">{{ $item->name }}</label>
+                                        </li>
+                                    @endforeach
                                 </ul>
                             </form>
                         </div>
@@ -70,8 +67,8 @@
                             <form action="#">
                                 <ul>
                                     @foreach ($querys as $item)
-                                        <li class="filter-list"><input class="pixel-radio" type="radio"
-                                                id="radio-color-category" onclick="checkRadio(a)" data-id={{ $item->color }}
+                                        <li class="filter-list"><input class="radio-color-category" type="radio"
+                                                id="radio-color-category" value="{{ $item['color'] }}"
                                                 name="radio-color-category"><label
                                                 for="black">{{ arrayColor($item->color) }}<span>({{ $counted[$item['color']] }})</span></label>
                                         </li>
@@ -106,10 +103,10 @@
                             </select>
                         </div>
                         <div class="sorting mr-auto">
-                            <select>
-                                <option value="1">Show 12</option>
-                                <option value="1">Show 12</option>
-                                <option value="1">Show 12</option>
+                            <select onchange="location = this.options[this.selectedIndex].value;">
+                                <option value="{{ route('users.show3') }}">Show 3</option>
+                                <option value="{{ route('users.show6') }}">Show 6</option>
+                                <option value="{{ route('users.show9') }}">Show 9</option>
                             </select>
                         </div>
                         <div>
@@ -291,28 +288,32 @@
                 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
             }
         });
-        $('input:radio[name="brand"]').change(
-            function(e) {
-                e.preventDefault();
-                // var formData = new FormData(this);
-                let category = 0;
-                let color = 0;
-                let supplier= 0;
-                let _token   = $('meta[name="csrf-token"]').attr('content');
-                category = $('input[name="brand"]:checked').val();
-                console.log($('input[name="brand"]:checked').val());
+    // search category supplier ---------------------------------------------------------------
+    $('input:radio').change(
+    function(e) {
+            e.preventDefault();
+            let color = 0;
+            let category = 0;
+            let supplier = 0;
+            let _token   = $('meta[name="csrf-token"]').attr('content');
+            let name = $('#search-category').val();
+            category = $('input[name="brand"]:checked').val();
+            color = $('input[name="radio-color-category"]:checked').val();
+            supplier = $('input[name="radio-supplier-category"]:checked').val();
 
         $.ajax({
-            url:  "{{ route('users.search-nav') }}",
+            url:  "{{ route('users.search-category') }}",
             type:"POST",
             data:{
-              category: category,
-              _token: _token
-            },
-            success:function(response){
-                console.log(response);
-                $(".products-category").empty();
-                response.forEach(element => {
+                name: name,
+                color: color,
+                category: category,
+                supplier: supplier,
+                _token: _token
+                },
+                success:function(response){
+                    $(".products-category").empty();
+                    response.forEach(element => {
                         $('.products-category').append(
                         '<div class="col-md-6 col-lg-4">' +
                         '<div class="card text-center card-product">' +
@@ -331,22 +332,27 @@
                         '</div>' +
                         '</div>' +
                         '</div>' );
-                });
-                $(".d-print-inline-block").empty();
+                    });
+                    // $(".d-print-inline-block").empty();
                 
-                // $('.products-category').append('$response->links('vendor/pagination.view-nav')');
+                    // $('.products-category').append('$response->links('vendor/pagination.view-nav')');
                
             },
-            });
         });
-
-        // search string 
+    });
+    // search keyboard ----------------------------------------------------------------------- 
         var timeout;
         $("#search-category").keyup(function() {
         var $this = $(this);
-        let name = $(this);
+        let name = $('#search-category').val();
         let _token   = $('meta[name="csrf-token"]').attr('content');
-        
+        let color = 0;
+        let category = 0;
+        let supplier = 0;
+        color = $('input[name="radio-color-category"]:checked').val();
+        category = $('input[name="brand"]:checked').val();
+        supplier = $('input[name="radio-supplier-category"]:checked').val();
+
         if(timeout) {
             clearTimeout(timeout);
         }
@@ -358,12 +364,36 @@
             type:"POST",
             data:{
                 name: name,
+                color: color,
+                category: category,
+                supplier: supplier,
                 _token: _token
             },
-            success(function(response) {
+            success:function(response) {
                 console.log(response);
+                $(".products-category").empty();
+                    response.forEach(element => {
+                        $('.products-category').append(
+                        '<div class="col-md-6 col-lg-4">' +
+                        '<div class="card text-center card-product">' +
+                        '<div class="card-product__img">' +
+                        '<img class="card-img" src="/' + element['image'] + '" alt="">' +
+                        '<ul class="card-product__imgOverlay">' +
+                        '<li><button id="asd"><i class="ti-search"></i></button></li>' +
+                        '<li><button><i class="ti-shopping-cart"></i></button></li>' +
+                        '<li><button><i class="ti-heart"></i></button></li>' +
+                        '</ul>' +
+                        '</div>' +
+                        '<div class="card-body">' +
+                        '<p>Accessories</p>' +
+                        '<h4 class="card-product__title"><a href="single-product.html">' + element.name + '</a></h4>' +
+                        '<p class="card-product__price">' + element['price'] + '</p>' +
+                        '</div>' +
+                        '</div>' +
+                        '</div>' );
+                    });
+            },
             });
-            })
             
         }, 300);
         });

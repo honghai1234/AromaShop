@@ -47,4 +47,8 @@ Route::group(['prefix' => 'users'], function () {
     Route::get('search-admin-ajax', [AdminController::class, 'searchajax'])->name('users.search-admin-ajax');
     Route::post('search-page-admin', [ProductController::class, 'searchNav'])->name('users.search-nav');
     Route::post('search-page-category', [ProductController::class, 'searchCategory'])->name('users.search-category');
+
+    Route::get('search-show-3', [ProductController::class, 'show3'])->name('users.show3');
+    Route::get('search-show-6', [ProductController::class, 'index'])->name('users.show6');
+    Route::get('search-show-9', [ProductController::class, 'show9'])->name('users.show9');
 });
