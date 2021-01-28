@@ -72,43 +72,25 @@ class ProductController extends Controller
     {
         //
     }
-    public function searchNav(Request $request)
-    {
-        Log::info($request);
-        Log::info($request->category);
 
-        $product = Product::query();
-        if ($request->has('search')) {
-            $product->where('name', 'LIKE', '%' . $request->text . '%');
-        }
-        // if ($request->has('color')) {
-        //     if ($request->color != 0) {
-        //         $product->where('supplier_id', $request->supplier);
-        //     }
-        // }
-        // if ($request->has('color')) {
-        //     if ($request->color != 0) {
-        //         $product->where('color', $request->color);
-        //     }
-        // }
-        $products =  $product->get();
-        // return view('admin', [
-        //     'products' => $products
-        // ]);
-        return response()->json($products);
-    }
     public function searchCategory(Request $request)
     {
-        Log::info($request);
-        Log::info($request->category);
+        Log::info($request->name);
+        $product = Product::query();
+        if ($request->name) {
+            $product->where('name', 'LIKE', '%' . $request->name . '%');
+        }
+        $products =  $product->get();
+        return response()->json($products);
+    }
 
+    public function searchNav(Request $request)
+    {
         $product = Product::query();
         if ($request->category) {
             $product->where('categorie_id', $request->category);
         }
-
         $products =  $product->get();
-
         return response()->json($products);
     }
 

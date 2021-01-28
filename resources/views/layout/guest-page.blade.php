@@ -15,8 +15,9 @@
     <link rel="stylesheet" href="{{ URL::asset('vendors/nice-select/nice-select.css') }}">
     <link rel="stylesheet" href="{{ URL::asset('vendors/owl-carousel/owl.theme.default.min.css') }}">
     <link rel="stylesheet" href="{{ URL::asset('vendors/owl-carousel/owl.carousel.min.css') }}">
-    @yield('css')
     <link rel="stylesheet" href="{{ URL::asset('css/style.css') }}">
+    @yield('css')
+
 </head>
 
 <body>
@@ -29,7 +30,10 @@
     <!--================ End footer Area  =================-->
 
 
-    <script src="{{ URL::asset('vendors/jquery/jquery-3.2.1.min.js') }}"></script>
+    
+
+</body>
+<script src="{{ URL::asset('vendors/jquery/jquery-3.2.1.min.js') }}"></script>
     <script src="{{ URL::asset('vendors/bootstrap/bootstrap.bundle.min.js') }}"></script>
     <script src="{{ URL::asset('vendors/skrollr.min.js') }}"></script>
     <script src="{{ URL::asset('vendors/owl-carousel/owl.carousel.min.js') }}"></script>
@@ -37,7 +41,5 @@
     <script src="{{ URL::asset('vendors/jquery.ajaxchimp.min.js') }}"></script>
     <script src="{{ URL::asset('vendors/mail-script.js') }}"></script>
     <script src="{{ URL::asset('js/main.js') }}"></script>
-</body>
 @yield('script')
-
 </html>

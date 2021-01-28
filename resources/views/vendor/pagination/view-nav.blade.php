@@ -1,7 +1,30 @@
+@section('css')
+  
+<style>
+.pagination {
+  display: inline-block;
+}
+
+.pagination li {
+  color: black;
+  float: left;
+  padding: 8px 16px;
+  text-decoration: none;
+  transition: background-color .3s;
+}
+
+.pagination li.active {
+  background-color: #4CAF50;
+  color: white;
+}
+
+.pagination li:hover:not(.active) {background-color: #ddd;}
+    </style>
+@endsection
 @if ($paginator->hasPages())
     <!-- Pagination -->
     <div class="pull-right pagination">
-        <ul class="pagination">
+        <ul class="pagination" >
             {{-- Previous Page Link --}}
             @if ($paginator->onFirstPage())
                 <li class="disabled">
@@ -22,9 +45,7 @@
                     @foreach ($element as $page => $url)
                         @if ($page == $paginator->currentPage())
                             <li class="active"><span>{{ $page }}</span></li>
-                        @elseif (($page == $paginator->currentPage() + 1 || $page == $paginator->currentPage() +
-                            2)
-                            || $page == $paginator->lastPage())
+                        @elseif (($page == $paginator->currentPage() + 1 || $page == $paginator->currentPage() + 2) || $page == $paginator->lastPage())
                             <li><a href="{{ $url }}">{{ $page }}</a></li>
                         @elseif ($page == $paginator->lastPage() - 1)
                             <li class="disabled"><span><i class="fa fa-ellipsis-h"></i></span></li>
@@ -32,7 +53,6 @@
                     @endforeach
                 @endif
             @endforeach
-
 
             {{-- Next Page Link --}}
             @if ($paginator->hasMorePages())

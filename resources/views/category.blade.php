@@ -1,5 +1,5 @@
 @extends('layout.guest-page')
-
+  
 @section('meta')
 <meta name="csrf-token" content="{{ csrf_token() }}">
 @endsection
@@ -116,20 +116,19 @@
                             <div class="input-group filter-bar-search">
                                 <input type="text" id="search-category" name="search-category" placeholder="Search">
                                 <div class="input-group-append">
-                                    <button type="button" name="search"><i class="ti-search"></i></button>
+                                    <button type="button" onclick=""><i class="ti-search"></i></button>
                                 </div>
                             </div>
                         </div>
                     </div>
 
                     <section class="lattest-product-area pb-40 category-list">
-                        <div class="row products-category" id="products-category">
+                        <div class="row products-category">
                             @foreach ($products as $item)
                                 <x-card_product type="error" :item="$item" />
                             @endforeach
                         </div>
                         <div class="d-print-inline-block">
-
                             {{ $products->links('vendor/pagination.view-nav') }}
                         </div>
                     </section>
@@ -284,26 +283,9 @@
     </section>
 @endsection
 @section('script')
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
     <script>
-        var timeout;
-        $("#search-category").keyup(function() {
-        var $this = $(this);
-        if(timeout) {
-            clearTimeout(timeout);
-        }
-        timeout = setTimeout(function() {
-        $.ajax({
-                type: "POST",
-                url: "{{ route('users.search-category') }}",
-                data: 'name=' + $this.val(),
-            })
-            .fail(function() {
-                console.log("error");
-            }).success(function(response) {
-                console.log(response);
-            });
-        }, 3000);
-        });
         $.ajaxSetup({
             headers: {
                 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
@@ -328,22 +310,64 @@
               _token: _token
             },
             success:function(response){
-              console.log(response);
-            //   $(".category-list").empty().append(html);
-            $('.category-list').append(html)
-            /*var html = '<div>asdsadas</div>';
-                html += '@foreach ($products as $item)';
-                html += '<p>aSasassadsadasdasd</p> />';
-                html += '@endforeach';
-                html += '</div>';
-                html += '<div class="d-print-inline-block">';
-                html += '{{ $products->links('vendor/pagination.view-nav') }}';
-                html += '</div>';
-            $(".category-list").append(html);*/
-            // $("#divid").load(" #divid");
+                console.log(response);
+                $(".products-category").empty();
+                response.forEach(element => {
+                        $('.products-category').append(
+                        '<div class="col-md-6 col-lg-4">' +
+                        '<div class="card text-center card-product">' +
+                        '<div class="card-product__img">' +
+                        '<img class="card-img" src="/' + element['image'] + '" alt="">' +
+                        '<ul class="card-product__imgOverlay">' +
+                        '<li><button id="asd"><i class="ti-search"></i></button></li>' +
+                        '<li><button><i class="ti-shopping-cart"></i></button></li>' +
+                        '<li><button><i class="ti-heart"></i></button></li>' +
+                        '</ul>' +
+                        '</div>' +
+                        '<div class="card-body">' +
+                        '<p>Accessories</p>' +
+                        '<h4 class="card-product__title"><a href="single-product.html">' + element.name + '</a></h4>' +
+                        '<p class="card-product__price">' + element['price'] + '</p>' +
+                        '</div>' +
+                        '</div>' +
+                        '</div>' );
+                });
+                $(".d-print-inline-block").empty();
+                
+                // $('.products-category').append('$response->links('vendor/pagination.view-nav')');
+               
             },
             });
         });
+
+        // search string 
+        var timeout;
+        $("#search-category").keyup(function() {
+        var $this = $(this);
+        let name = $(this);
+        let _token   = $('meta[name="csrf-token"]').attr('content');
+        
+        if(timeout) {
+            clearTimeout(timeout);
+        }
+        timeout = setTimeout(function() {
+            
+        
+        $.ajax({
+            url:  "{{ route('users.search-category') }}",
+            type:"POST",
+            data:{
+                name: name,
+                _token: _token
+            },
+            success(function(response) {
+                console.log(response);
+            });
+            })
+            
+        }, 300);
+        });
+        
 
     </script>
 @endsection
