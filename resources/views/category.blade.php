@@ -35,6 +35,9 @@
                             <li class="common-filter">
                                 <form action="#">
                                     <ul>
+                                        <li class="filter-list"><input class="pixel-radio" type="radio" id="men"
+                                            name="brand" value="0"><label
+                                            for="men">All</label></li>
                                         @foreach ($categorys as $item)
                                             <li class="filter-list"><input class="pixel-radio" type="radio" id="men"
                                                     name="brand" value="{{ $item['id'] }}"><label
@@ -52,6 +55,11 @@
                             <div class="head">Brands</div>
                             <form action="#">
                                 <ul>
+                                    <li class="filter-list"><input class="radio-supplier-category" type="radio"
+                                        id="radio-supplier-category" value="0"
+                                        name="radio-supplier-category"><label
+                                        for="black">All</label>
+                                </li>
                                     @foreach ($suppliers as $item)
                                         <li class="filter-list"><input class="radio-supplier-category" type="radio"
                                                 id="radio-supplier-category" value="{{ $item['id'] }}"
@@ -66,6 +74,11 @@
                             <div class="head">Color</div>
                             <form action="#">
                                 <ul>
+                                    <li class="filter-list"><input class="radio-color-category" type="radio"
+                                        id="radio-color-category" value="0"
+                                        name="radio-color-category"><label
+                                        for="black">All</span></label>
+                                </li>
                                     @foreach ($querys as $item)
                                         <li class="filter-list"><input class="radio-color-category" type="radio"
                                                 id="radio-color-category" value="{{ $item['color'] }}"

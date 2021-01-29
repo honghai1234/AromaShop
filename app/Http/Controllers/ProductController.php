@@ -115,13 +115,19 @@ class ProductController extends Controller
             $product->where('name', 'LIKE', '%' . $request->name . '%');
         }
         if ($request->category) {
-            $product->where('categorie_id', $request->category);
+            if ($request->category != 0) {
+                $product->where('categorie_id', $request->category);
+            }
         }
         if ($request->color) {
-            $product->where('color', $request->color);
+            if ($request->color != 0) {
+                $product->where('color', $request->color);
+            }
         }
         if ($request->supplier) {
-            $product->where('supplier_id', $request->supplier);
+            if ($request->supplier != 0) {
+                $product->where('supplier_id', $request->supplier);
+            }
         }
         $products =  $product->get();
         return response()->json($products);
