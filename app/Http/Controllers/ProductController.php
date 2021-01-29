@@ -109,7 +109,6 @@ class ProductController extends Controller
 
     public function searchCategory(Request $request)
     {
-        Log::info($request);
         $product = Product::query();
         if ($request->name) {
             $product->where('name', 'LIKE', '%' . $request->name . '%');
@@ -129,17 +128,7 @@ class ProductController extends Controller
                 $product->where('supplier_id', $request->supplier);
             }
         }
-        $products =  $product->get();
-        return response()->json($products);
-    }
-
-    public function searchNav(Request $request)
-    {
-        $product = Product::query();
-        if ($request->category) {
-            $product->where('categorie_id', $request->category);
-        }
-        $products =  $product->get();
+        $products =  $product->where('delete_flg', '<>', 1)->paginate(3);
         return response()->json($products);
     }
 

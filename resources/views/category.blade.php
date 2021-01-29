@@ -36,7 +36,7 @@
                                 <form action="#">
                                     <ul>
                                         <li class="filter-list"><input class="pixel-radio" type="radio" id="men"
-                                            name="brand" value="0"><label
+                                            name="brand" value="0" checked><label
                                             for="men">All</label></li>
                                         @foreach ($categorys as $item)
                                             <li class="filter-list"><input class="pixel-radio" type="radio" id="men"
@@ -57,7 +57,7 @@
                                 <ul>
                                     <li class="filter-list"><input class="radio-supplier-category" type="radio"
                                         id="radio-supplier-category" value="0"
-                                        name="radio-supplier-category"><label
+                                        name="radio-supplier-category" checked><label
                                         for="black">All</label>
                                 </li>
                                     @foreach ($suppliers as $item)
@@ -76,7 +76,7 @@
                                 <ul>
                                     <li class="filter-list"><input class="radio-color-category" type="radio"
                                         id="radio-color-category" value="0"
-                                        name="radio-color-category"><label
+                                        name="radio-color-category" checked><label
                                         for="black">All</span></label>
                                 </li>
                                     @foreach ($querys as $item)
@@ -139,7 +139,7 @@
                             @endforeach
                         </div>
                         <div class="d-print-inline-block">
-                            {{ $products->links('vendor/pagination.view-nav') }}
+                            {{ $products->links() }}
                         </div>
                     </section>
 
@@ -325,8 +325,9 @@
                 _token: _token
                 },
                 success:function(response){
+                    console.log(response);
                     $(".products-category").empty();
-                    response.forEach(element => {
+                    response.data.forEach(element => {
                         $('.products-category').append(
                         '<div class="col-md-6 col-lg-4">' +
                         '<div class="card text-center card-product">' +
@@ -346,11 +347,9 @@
                         '</div>' +
                         '</div>' );
                     });
-                    // $(".d-print-inline-block").empty();
-                
-                    // $('.products-category').append('$response->links('vendor/pagination.view-nav')');
-               
-            },
+                    $('ul.pagination').replaceWith(data);
+                    console.log(data)
+                },
         });
     });
     // search keyboard ----------------------------------------------------------------------- 
@@ -385,7 +384,7 @@
             success:function(response) {
                 console.log(response);
                 $(".products-category").empty();
-                    response.forEach(element => {
+                    response.data.forEach(element => {
                         $('.products-category').append(
                         '<div class="col-md-6 col-lg-4">' +
                         '<div class="card text-center card-product">' +
